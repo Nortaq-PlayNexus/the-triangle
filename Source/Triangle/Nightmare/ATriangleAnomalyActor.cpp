@@ -4,8 +4,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "UObject/ConstructorHelpers.h"
 #include "UObject/Class.h"
+#include "UObject/ConstructorHelpers.h"
 
 FLinearColor ATriangleAnomalyActor::IntrusionColor = FLinearColor(0.02f, 0.03f, 0.045f);
 
@@ -35,14 +35,7 @@ ATriangleAnomalyActor::ATriangleAnomalyActor()
 
 UStaticMesh* ATriangleAnomalyActor::LoadMesh(const TCHAR* Path)
 {
-	static TMap<FString, UStaticMesh*> Cache;
-	UStaticMesh** Found = Cache.Find(Path);
-	if (Found)
-	{
-		return *Found;
-	}
 	UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, Path);
-	Cache.Add(Path, Mesh);
 	return Mesh;
 }
 

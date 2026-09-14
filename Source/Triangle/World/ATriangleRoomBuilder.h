@@ -50,6 +50,9 @@ protected:
 	float RoomHeight = 300.f;
 
 private:
+	/** World-altitude the room is assembled at, high above any template terrain. */
+	static constexpr float RoomElevation = 5000.f;
+
 	UStaticMesh* GetCubeMesh();
 	UStaticMesh* GetPlaneMesh();
 

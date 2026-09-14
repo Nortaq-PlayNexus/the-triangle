@@ -66,7 +66,6 @@ public:
 	float GetDreamClock() const { return DreamClock; }
 
 private:
-	FTriangleMotifConfig DefaultConfig;
 	float DreamClock = 0.f;
 	bool bSchedulingEnabled = false;
 

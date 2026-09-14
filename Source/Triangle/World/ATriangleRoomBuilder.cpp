@@ -44,7 +44,7 @@ void ATriangleRoomBuilder::BeginPlay()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (UWorld* World = GetWorld())
 	{
-		APlayerStart* DreamStart = World->SpawnActor<APlayerStart>(FVector(0.f, 0.f, 92.f), FRotator(0.f, 180.f, 0.f), SpawnParams);
+		APlayerStart* DreamStart = World->SpawnActor<APlayerStart>(FVector(0.f, 0.f, 92.f + RoomElevation), FRotator(0.f, 180.f, 0.f), SpawnParams);
 		if (DreamStart)
 		{
 			DreamStart->Tags.Add(TEXT("DreamStart"));
@@ -73,7 +73,7 @@ UStaticMeshComponent* ATriangleRoomBuilder::AddBox(const FVector& Location, cons
 		return nullptr;
 	}
 
-	AStaticMeshActor* MeshActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FTransform(Rotation, Location));
+	AStaticMeshActor* MeshActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FTransform(Rotation, Location + FVector(0.f, 0.f, RoomElevation)));
 	if (!MeshActor)
 	{
 		return nullptr;
@@ -152,7 +152,7 @@ void ATriangleRoomBuilder::BuildNotebook()
 	}
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	ATriangleNotebook* Notebook = GetWorld()->SpawnActor<ATriangleNotebook>(ATriangleNotebook::StaticClass(), FVector(-50.f, 200.f, 91.f), FRotator::ZeroRotator, Params);
+	ATriangleNotebook* Notebook = GetWorld()->SpawnActor<ATriangleNotebook>(ATriangleNotebook::StaticClass(), FVector(-50.f, 200.f, 91.f + RoomElevation), FRotator::ZeroRotator, Params);
 	if (Notebook)
 	{
 		Notebook->Tags.Add(TEXT("DreamMemory"));
@@ -167,7 +167,7 @@ void ATriangleRoomBuilder::BuildDoor()
 	}
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	GetWorld()->SpawnActor<ATriangleDoor>(ATriangleDoor::StaticClass(), FVector(RoomHalfX - 5.f, 175.f, 105.f), FRotator::ZeroRotator, Params);
+	GetWorld()->SpawnActor<ATriangleDoor>(ATriangleDoor::StaticClass(), FVector(RoomHalfX - 5.f, 175.f, 105.f + RoomElevation), FRotator::ZeroRotator, Params);
 }
 
 void ATriangleRoomBuilder::BuildCornerPoint()
@@ -178,7 +178,7 @@ void ATriangleRoomBuilder::BuildCornerPoint()
 	}
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	GetWorld()->SpawnActor<ATriangleTrianglePoint>(ATriangleTrianglePoint::StaticClass(), TriangleCornerLocation, FRotator::ZeroRotator, Params);
+	GetWorld()->SpawnActor<ATriangleTrianglePoint>(ATriangleTrianglePoint::StaticClass(), TriangleCornerLocation + FVector(0.f, 0.f, RoomElevation), FRotator::ZeroRotator, Params);
 }
 
 void ATriangleRoomBuilder::BuildLighting()
@@ -199,7 +199,7 @@ void ATriangleRoomBuilder::BuildLighting()
 	}
 
 	// Ceiling fill - sombre, low, slightly warm against the blue moonlight.
-	APointLight* Fill = World->SpawnActor<APointLight>(APointLight::StaticClass(), FVector(0.f, 0.f, 250.f), FRotator::ZeroRotator);
+	APointLight* Fill = World->SpawnActor<APointLight>(APointLight::StaticClass(), FVector(0.f, 0.f, 250.f + RoomElevation), FRotator::ZeroRotator);
 	if (Fill)
 	{
 		Fill->GetLightComponent()->SetIntensity(140.f);
@@ -212,7 +212,7 @@ void ATriangleRoomBuilder::BuildLighting()
 	}
 
 	// Cold glow spilling from the window.
-	APointLight* WindowLight = World->SpawnActor<APointLight>(APointLight::StaticClass(), FVector(-RoomHalfX - 18.f, 0.f, 150.f), FRotator::ZeroRotator);
+	APointLight* WindowLight = World->SpawnActor<APointLight>(APointLight::StaticClass(), FVector(-RoomHalfX - 18.f, 0.f, 150.f + RoomElevation), FRotator::ZeroRotator);
 	if (WindowLight)
 	{
 		WindowLight->GetLightComponent()->SetIntensity(340.f);

@@ -36,13 +36,13 @@ ATriangleDoor::ATriangleDoor()
 	Interactable->InteractionAnchor = DoorMesh;
 	Interactable->MaxInteractionRange = 230.f;
 
-	ClosedRotation = GetActorRotation();
 	OpenRotation = FRotator(0.f, -95.f, 0.f);
 }
 
 void ATriangleDoor::BeginPlay()
 {
 	Super::BeginPlay();
+	ClosedRotation = GetActorRotation();
 	Interactable->OnInteracted.AddDynamic(this, &ATriangleDoor::OnInteracted);
 }
 

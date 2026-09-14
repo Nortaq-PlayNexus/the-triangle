@@ -158,8 +158,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Dream|Presence", meta = (ClampMin = "3", ClampMax = "60"))
 	float MasterSenseInterval = 9.f;
 
-	/** The catalogue of bodies The Triangle can take. Populated with sensible defaults. */
-	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Dream|Manifestations")
+	/** The catalogue of bodies The Triangle can take. Populated in the constructor. */
+	UPROPERTY(VisibleAnywhere, Category = "Triangle|Dream|Manifestations")
 	TArray<TObjectPtr<UTriangleManifestationDefinition>> ManifestationPool;
 
 	UPROPERTY(VisibleAnywhere)

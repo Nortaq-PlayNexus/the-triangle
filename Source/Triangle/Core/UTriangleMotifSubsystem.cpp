@@ -9,8 +9,6 @@
 void UTriangleMotifSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	DefaultConfig.MinCooldown = 25.f;
-	DefaultConfig.MaxCooldown = 55.f;
 }
 
 void UTriangleMotifSubsystem::RegisterMotif(FName Id, const FTriangleMotifConfig& Config)

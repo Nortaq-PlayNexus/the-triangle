@@ -44,7 +44,6 @@ void ULTriangleRecognitionComponent::SetRecognition(float NewValue)
 
 	const ETriangleRecognitionLevel PreviousLevel = GetRecognitionLevel();
 	Recognition = Clamped;
-	ApplyClamped();
 
 	UE_LOG(LogTriangleDream, Log, TEXT("Recognition changed to %.1f"), Recognition);
 	OnRecognitionChanged.Broadcast(Recognition);
@@ -95,9 +94,4 @@ void ULTriangleRecognitionComponent::RestoreFromSave(float SavedRecognition)
 	{
 		SetRecognition(SavedRecognition);
 	}
-}
-
-void ULTriangleRecognitionComponent::ApplyClamped()
-{
-	Recognition = FMath::Clamp(Recognition, 0.f, 100.f);
 }

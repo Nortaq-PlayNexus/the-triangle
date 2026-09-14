@@ -79,6 +79,5 @@ private:
 	FTriangleLucidityMaxEvent LucidityMaxEvent;
 	bool bMaxReached = false;
 
-	void ApplyClamped();
 	static ETriangleLucidityLevel LevelFor(float Value);
 };

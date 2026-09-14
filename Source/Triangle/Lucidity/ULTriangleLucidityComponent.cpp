@@ -40,7 +40,6 @@ void ULTriangleLucidityComponent::SetLucidity(float NewValue)
 
 	const ETriangleLucidityLevel PreviousLevel = GetLucidityLevel();
 	Lucidity = Clamped;
-	ApplyClamped();
 
 	UE_LOG(LogTriangleDream, Log, TEXT("Lucidity changed to %.1f"), Lucidity);
 	OnLucidityChanged.Broadcast(Lucidity);
@@ -72,9 +71,4 @@ void ULTriangleLucidityComponent::RestoreFromSave(float SavedLucidity)
 	{
 		SetLucidity(SavedLucidity);
 	}
-}
-
-void ULTriangleLucidityComponent::ApplyClamped()
-{
-	Lucidity = FMath::Clamp(Lucidity, 0.f, 100.f);
 }

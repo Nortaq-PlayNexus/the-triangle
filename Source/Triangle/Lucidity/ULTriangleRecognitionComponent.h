@@ -103,7 +103,6 @@ public:
 	void RestoreFromSave(float SavedRecognition);
 
 private:
-	void ApplyClamped();
 	static ETriangleRecognitionLevel LevelFor(float Value);
 
 	/** The pattern catalogue: ids the player has already watched resolve. */

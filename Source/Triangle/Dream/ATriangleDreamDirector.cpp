@@ -33,7 +33,6 @@ ATriangleDreamDirector::ATriangleDreamDirector()
 	// Default bodies The Triangle can take in the slice. Authoring can swap the
 	// whole pool via the ManifestationPool property on the instance.
 	{
-		int32 Index = 0;
 		const TCHAR* Names[TriangleDirectorPrivate::NumPoolManifestations] = {
 			TEXT("UpperCornerPoint"), TEXT("TheHumOnly"), TEXT("GapInTheWall"),
 			TEXT("CornerPulled"), TEXT("DistantPoint"), TEXT("DoorwayCut")
@@ -44,7 +43,6 @@ ATriangleDreamDirector::ATriangleDreamDirector()
 			Def->ManifestId = FName(Name);
 			Def->ObserverNote = FText::FromString(TEXT("Default slice manifestation."));
 			ManifestationPool.Add(Def);
-			++Index;
 		}
 	}
 	// Preset the kinds on the default bodies.
