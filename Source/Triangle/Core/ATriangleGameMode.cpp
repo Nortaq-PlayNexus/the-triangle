@@ -6,8 +6,10 @@
 #include "Characters/ATrianglePlayerController.h"
 #include "Dream/ATriangleDreamDirector.h"
 #include "UI/ATriangleHUD.h"
+#include "World/ATriangleRoomBuilder.h"
 
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 ATriangleGameMode::ATriangleGameMode()
 {
@@ -20,9 +22,19 @@ void ATriangleGameMode::StartPlay()
 {
 	Super::StartPlay();
 
-	if (DreamDirector == nullptr)
+	UWorld* World = GetWorld();
+
+	// The slice is entirely code-driven: if no level has placed the room
+	// builder, assemble the childhood bedroom from the origin so PIE always
+	// has a world to walk around in.
+	if (World && !UGameplayStatics::GetActorOfClass(World, ATriangleRoomBuilder::StaticClass()))
 	{
-		DreamDirector = GetWorld()->SpawnActor<ATriangleDreamDirector>(ATriangleDreamDirector::StaticClass(), FTransform::Identity);
+		World->SpawnActor<ATriangleRoomBuilder>(ATriangleRoomBuilder::StaticClass(), FTransform::Identity);
+	}
+
+	if (World && DreamDirector == nullptr)
+	{
+		DreamDirector = World->SpawnActor<ATriangleDreamDirector>(ATriangleDreamDirector::StaticClass(), FTransform::Identity);
 		if (DreamDirector)
 		{
 			DreamDirector->InitializeDream();

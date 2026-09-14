@@ -77,9 +77,9 @@ UStaticMeshComponent* ATriangleRoomBuilder::AddBox(const FVector& Location, cons
 	}
 
 	UStaticMeshComponent* MeshComponent = MeshActor->GetStaticMeshComponent();
+	MeshComponent->SetMobility(EComponentMobility::Movable);
 	MeshComponent->SetStaticMesh(GetCubeMesh());
 	MeshComponent->SetRelativeScale3D(Scale);
-	MeshComponent->SetMobility(EComponentMobility::Movable);
 	MeshComponent->SetCollisionProfileName(TEXT("BlockAll"));
 	return MeshComponent;
 }
