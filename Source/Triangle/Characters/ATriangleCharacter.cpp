@@ -17,6 +17,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerStart.h"
 #include "InputAction.h"
 #include "InputCoreTypes.h"
 #include "InputMappingContext.h"
@@ -65,6 +66,27 @@ void ATriangleCharacter::Tick(float DeltaSeconds)
 	{
 		SetFocusedInteractable(nullptr);
 	}
+}
+
+void ATriangleCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// Guarantee the pawn lands inside the dream room. The game mode may pick a
+	// map-native start when the room's DreamStart has not spawned yet, and that
+	// scatters the player across a template landscape. Once possessed, snap to
+	// the DreamStart, or fall back to the room centre facing the moonlit window.
+	FTransform HomeTransform(FRotator(0.f, 180.f, 0.f), FVector(0.f, 0.f, 92.f));
+	if (UWorld* World = GetWorld())
+	{
+		TArray<AActor*> DreamStarts;
+		UGameplayStatics::GetAllActorsOfClassWithTag(World, APlayerStart::StaticClass(), TEXT("DreamStart"), DreamStarts);
+		if (DreamStarts.Num() > 0 && DreamStarts[0])
+		{
+			HomeTransform = DreamStarts[0]->GetActorTransform();
+		}
+	}
+	SetActorLocationAndRotation(HomeTransform.GetLocation(), HomeTransform.GetRotation());
 }
 
 void ATriangleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

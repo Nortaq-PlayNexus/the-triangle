@@ -32,6 +32,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void PossessedBy(AController* NewController) override;
 
 	/** The currently focused interactable (if any). */
 	UPROPERTY(BlueprintReadOnly, Category = "Triangle|Interaction")

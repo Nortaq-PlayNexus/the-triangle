@@ -5,13 +5,11 @@
 #include "World/ATriangleNotebook.h"
 #include "Dream/ATriangleTrianglePoint.h"
 
-#include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/LightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Engine/DirectionalLight.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Engine/GameInstance.h"
 #include "Engine/PointLight.h"
@@ -40,12 +38,17 @@ void ATriangleRoomBuilder::BeginPlay()
 	BuildCornerPoint();
 	BuildLighting();
 
-	// The player spawns centred near the back wall, facing the door.
+	// The player spawns centred in the room, facing the window-lit back wall
+	// so the first thing on screen reads as a moonlit bedroom.
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (UWorld* World = GetWorld())
 	{
-		World->SpawnActor<APlayerStart>(FVector(0.f, 0.f, 92.f), FRotator::ZeroRotator, SpawnParams);
+		APlayerStart* DreamStart = World->SpawnActor<APlayerStart>(FVector(0.f, 0.f, 92.f), FRotator(0.f, 180.f, 0.f), SpawnParams);
+		if (DreamStart)
+		{
+			DreamStart->Tags.Add(TEXT("DreamStart"));
+		}
 	}
 
 	UE_LOG(LogTriangle, Log, TEXT("Childhood bedroom assembled (%s)."), GetWorld() ? *GetWorld()->GetName() : TEXT("?"));
@@ -124,21 +127,6 @@ void ATriangleRoomBuilder::BuildWindow()
 	{
 		WindowMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	// Moonlight rakes across the room from high behind the window.
-	ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FTransform(FRotator(-35.f, -45.f, 0.f)));
-	if (Moon)
-	{
-		Moon->GetLightComponent()->SetIntensity(0.35f);
-		Moon->GetLightComponent()->SetLightColor(FLinearColor(0.55f, 0.62f, 0.85f));
-		Moon->GetLightComponent()->SetCastShadows(true);
-	}
 }
 
 void ATriangleRoomBuilder::BuildBed()
@@ -205,7 +193,7 @@ void ATriangleRoomBuilder::BuildLighting()
 	ASkyLight* Sky = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FTransform::Identity);
 	if (Sky)
 	{
-		Sky->GetLightComponent()->SetIntensity(0.12f);
+		Sky->GetLightComponent()->SetIntensity(0.45f);
 		Sky->GetLightComponent()->SetLightColor(FLinearColor(0.30f, 0.36f, 0.46f));
 		Sky->GetLightComponent()->SetCastShadows(false);
 	}
@@ -214,10 +202,10 @@ void ATriangleRoomBuilder::BuildLighting()
 	APointLight* Fill = World->SpawnActor<APointLight>(APointLight::StaticClass(), FVector(0.f, 0.f, 250.f), FRotator::ZeroRotator);
 	if (Fill)
 	{
-		Fill->GetLightComponent()->SetIntensity(9.f);
+		Fill->GetLightComponent()->SetIntensity(140.f);
 		if (UPointLightComponent* FillLight = Cast<UPointLightComponent>(Fill->GetLightComponent()))
 		{
-			FillLight->SetAttenuationRadius(850.f);
+			FillLight->SetAttenuationRadius(900.f);
 		}
 		Fill->GetLightComponent()->SetLightColor(FLinearColor(0.62f, 0.55f, 0.44f));
 		Fill->GetLightComponent()->SetCastShadows(false);
@@ -227,10 +215,10 @@ void ATriangleRoomBuilder::BuildLighting()
 	APointLight* WindowLight = World->SpawnActor<APointLight>(APointLight::StaticClass(), FVector(-RoomHalfX - 18.f, 0.f, 150.f), FRotator::ZeroRotator);
 	if (WindowLight)
 	{
-		WindowLight->GetLightComponent()->SetIntensity(28.f);
+		WindowLight->GetLightComponent()->SetIntensity(340.f);
 		if (UPointLightComponent* WindowLightComponent = Cast<UPointLightComponent>(WindowLight->GetLightComponent()))
 		{
-			WindowLightComponent->SetAttenuationRadius(1100.f);
+			WindowLightComponent->SetAttenuationRadius(1300.f);
 		}
 		WindowLight->GetLightComponent()->SetLightColor(FLinearColor(0.55f, 0.68f, 0.95f));
 		WindowLight->GetLightComponent()->SetCastShadows(false);

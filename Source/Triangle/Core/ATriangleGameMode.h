@@ -5,6 +5,7 @@
 #include "ATriangleGameMode.generated.h"
 
 class ATriangleDreamDirector;
+class APlayerStart;
 
 /**
  * Base GameMode for The Triangle.
@@ -18,6 +19,8 @@ class ATriangleGameMode : public AGameModeBase
 
 public:
 	ATriangleGameMode();
+
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 
 protected:
 	virtual void StartPlay() override;
