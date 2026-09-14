@@ -7,6 +7,7 @@ class ATrianglePlayerController;
 class ATriangleHUD;
 class UTriangleSaveSubsystem;
 class ULTriangleLucidityComponent;
+class ULTriangleRecognitionComponent;
 
 /**
  * Static accessors for the commonly-needed Triangle gameplay systems.
@@ -23,4 +24,7 @@ public:
 
 	/** Returns the player's Lucidity component, or nullptr if the player can't be found. */
 	static ULTriangleLucidityComponent* GetPlayerLucidity(const UWorld* World);
+
+	/** Returns the player's Recognition component, or nullptr if unavailable. */
+	static ULTriangleRecognitionComponent* GetPlayerRecognition(const UWorld* World);
 };

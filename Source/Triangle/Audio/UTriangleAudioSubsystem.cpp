@@ -1,6 +1,7 @@
 #include "Audio/UTriangleAudioSubsystem.h"
 
 #include "Triangle.h"
+#include "Audio/ATriangleProceduralHumSource.h"
 #include "Components/AudioComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -128,7 +129,7 @@ void UTriangleAudioSubsystem::FadeTo(float TargetVolume, float FadeTime)
 	}
 
 	CurrentVolume = TargetVolume * MusicBaseVolume;
-	MusicComponent->FadeTo(CurrentVolume, FMath::Max(0.05f, FadeTime));
+	MusicComponent->AdjustVolume(FMath::Max(0.05f, FadeTime), CurrentVolume, EAudioFaderCurve::Linear);
 }
 
 void UTriangleAudioSubsystem::PlayOneShot(USoundBase* Sound, const FVector& Location, float Volume)
@@ -139,4 +140,46 @@ void UTriangleAudioSubsystem::PlayOneShot(USoundBase* Sound, const FVector& Loca
 		return;
 	}
 	UGameplayStatics::SpawnSoundAtLocation(World, Sound, Location, FRotator::ZeroRotator, Volume);
+}
+
+void UTriangleAudioSubsystem::EnsureHumSource()
+{
+	if (HumSource && IsValid(HumSource))
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	HumSource = World->SpawnActor<ATriangleProceduralHumSource>(ATriangleProceduralHumSource::StaticClass(), FTransform::Identity, Params);
+}
+
+void UTriangleAudioSubsystem::SetHumPresence(float Target01, float FadeTimeSeconds)
+{
+	// Hysteresis: tiny presences are not worth waking the hum for, matching the
+	// design beat where the hum is sometimes simply not there.
+	if (Target01 < 0.04f && IsHumActive())
+	{
+		Target01 = 0.f;
+	}
+
+	EnsureHumSource();
+	if (HumSource)
+	{
+		HumSource->SetPresence(Target01, FadeTimeSeconds);
+	}
+}
+
+bool UTriangleAudioSubsystem::IsHumActive() const
+{
+	return HumSource && IsValid(HumSource) && HumSource->IsHumming();
+}
+
+float UTriangleAudioSubsystem::GetHumPresence() const
+{
+	return HumSource && IsValid(HumSource) ? HumSource->GetHumPresence() : 0.f;
 }

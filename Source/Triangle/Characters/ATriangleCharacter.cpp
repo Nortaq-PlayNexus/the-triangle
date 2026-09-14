@@ -3,10 +3,13 @@
 #include "Triangle.h"
 #include "Characters/ATrianglePlayerController.h"
 #include "Core/FTriangleGameplayStatics.h"
+#include "Dream/UTriangleFalseAwakeningManager.h"
 #include "Interaction/UTriangleInteractableComponent.h"
 #include "Lucidity/ULTriangleLucidityComponent.h"
+#include "Lucidity/ULTriangleRecognitionComponent.h"
 #include "Save/UTriangleSaveGame.h"
 #include "Save/UTriangleSaveSubsystem.h"
+#include "UI/ATriangleHUD.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -38,6 +41,8 @@ ATriangleCharacter::ATriangleCharacter()
 	FirstPersonCamera->bUsePawnControlRotation = true;
 
 	Lucidity = CreateDefaultSubobject<ULTriangleLucidityComponent>(TEXT("Lucidity"));
+
+	Recognition = CreateDefaultSubobject<ULTriangleRecognitionComponent>(TEXT("Recognition"));
 }
 
 void ATriangleCharacter::BeginPlay()
@@ -73,6 +78,7 @@ void ATriangleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInput->BindAction(ActionJump, ETriggerEvent::Started, this, &ATriangleCharacter::StartJump);
 		EnhancedInput->BindAction(ActionJump, ETriggerEvent::Completed, this, &ATriangleCharacter::StopJump);
 		EnhancedInput->BindAction(ActionInteract, ETriggerEvent::Started, this, &ATriangleCharacter::PressInteract);
+		EnhancedInput->BindAction(ActionWake, ETriggerEvent::Started, this, &ATriangleCharacter::PressWake);
 		EnhancedInput->BindAction(ActionSave, ETriggerEvent::Started, this, &ATriangleCharacter::QuickSave);
 		EnhancedInput->BindAction(ActionLoad, ETriggerEvent::Started, this, &ATriangleCharacter::QuickLoad);
 	}
@@ -93,6 +99,7 @@ void ATriangleCharacter::EnsureInputBindings()
 
 	ActionJump = NewObject<UInputAction>(this);
 	ActionInteract = NewObject<UInputAction>(this);
+	ActionWake = NewObject<UInputAction>(this);
 	ActionSave = NewObject<UInputAction>(this);
 	ActionLoad = NewObject<UInputAction>(this);
 
@@ -100,8 +107,7 @@ void ATriangleCharacter::EnsureInputBindings()
 
 	auto AddMapping = [this](UInputAction* Action, FKey Key)
 	{
-		FEnhancedActionKeyMapping& Mapping = InputContext->MapKey(Action, Key);
-		Mapping.Context = InputContext;
+		InputContext->MapKey(Action, Key);
 	};
 
 	AddMapping(ActionMove, EKeys::W);
@@ -112,6 +118,7 @@ void ATriangleCharacter::EnsureInputBindings()
 	AddMapping(ActionLook, EKeys::MouseY);
 	AddMapping(ActionJump, EKeys::SpaceBar);
 	AddMapping(ActionInteract, EKeys::F);
+	AddMapping(ActionWake, EKeys::Q);
 	AddMapping(ActionSave, EKeys::F5);
 	AddMapping(ActionLoad, EKeys::F9);
 
@@ -165,6 +172,19 @@ void ATriangleCharacter::PressInteract(const FInputActionValue& Value)
 	}
 }
 
+void ATriangleCharacter::PressWake(const FInputActionValue& Value)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	if (UTriangleFalseAwakeningManager* Wake = World->GetSubsystem<UTriangleFalseAwakeningManager>())
+	{
+		Wake->TryWake();
+	}
+}
+
 void ATriangleCharacter::QuickSave(const FInputActionValue& Value)
 {
 	if (UTriangleSaveSubsystem* Save = FTriangleGameplayStatics::GetSaveSubsystem(GetWorld()))
@@ -201,6 +221,11 @@ void ATriangleCharacter::QuickLoad(const FInputActionValue& Value)
 	if (ULTriangleLucidityComponent* LucidityComp = FindComponentByClass<ULTriangleLucidityComponent>())
 	{
 		LucidityComp->RestoreFromSave(Snapshot->Lucidity);
+	}
+
+	if (ULTriangleRecognitionComponent* RecognitionComp = FindComponentByClass<ULTriangleRecognitionComponent>())
+	{
+		RecognitionComp->RestoreFromSave(Snapshot->Recognition);
 	}
 
 	if (ATrianglePlayerController* PC = FTriangleGameplayStatics::GetTrianglePlayerController(World))

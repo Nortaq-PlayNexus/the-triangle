@@ -13,8 +13,14 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $installPath = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools'
+$vsInstaller = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe'
 $bootstrapper = "$env:TEMP\opencode\vs_BuildTools.exe"
 $log = "$env:TEMP\opencode\vs_modify.log"
+
+if (-not (Test-Path $vsInstaller)) {
+    Write-Host "The VS Installer engine is missing ($vsInstaller)." -ForegroundColor Red
+    exit 1
+}
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -27,13 +33,8 @@ if (-not $isAdmin) {
     exit 1
 }
 
-if (-not (Test-Path $bootstrapper)) {
-    Write-Host "Downloading VS Build Tools bootstrapper..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile $bootstrapper -UseBasicParsing
-}
-
-Write-Host "Installing MSVC + Windows 11 SDK workload. This downloads several GB and can take 10-30 min." -ForegroundColor Cyan
-& $bootstrapper modify --installPath $installPath `
+Write-Host "Installing MSVC + Windows 11 SDK workload via the VS Installer engine. This downloads several GB and can take 10-30 min." -ForegroundColor Cyan
+& $vsInstaller modify --installPath $installPath `
     --add Microsoft.VisualStudio.Workload.VCTools `
     --includeRecommended `
     --add Microsoft.VisualStudio.Component.Windows11SDK.22621 `
@@ -41,8 +42,9 @@ Write-Host "Installing MSVC + Windows 11 SDK workload. This downloads several GB
     --log $log
 
 $exit = $LASTEXITCODE
+if ($null -eq $exit) { $exit = -1 }
 if ($exit -ne 0) {
-    Write-Host "Bootstrapper exited with code $exit (see $log)." -ForegroundColor Red
+    Write-Host "VS Installer exited with code $exit (see $log)." -ForegroundColor Red
     exit $exit
 }
 

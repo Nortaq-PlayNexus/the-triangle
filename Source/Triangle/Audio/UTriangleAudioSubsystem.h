@@ -6,6 +6,7 @@
 
 class UAudioComponent;
 class USoundBase;
+class ATriangleProceduralHumSource;
 
 /**
  * Structural audio routing for the dream.
@@ -46,8 +47,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Triangle|Audio")
 	void PlayOneShot(USoundBase* Sound, const FVector& Location, float Volume = 1.f);
 
+	/** Drives The Triangle's hum. Target01 is 0..1 presence; fade is honoured. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Audio")
+	void SetHumPresence(float Target01, float FadeTimeSeconds = 1.f);
+
+	/** Whether the hum is currently audible. */
+	UFUNCTION(BlueprintPure, Category = "Triangle|Audio")
+	bool IsHumActive() const;
+
+	/** Current smoothed hum presence (0..1). */
+	UFUNCTION(BlueprintPure, Category = "Triangle|Audio")
+	float GetHumPresence() const;
+
 private:
 	void EnsureMusicHost();
+	void EnsureHumSource();
 	void FadeTo(float TargetVolume, float FadeTime);
 
 	UPROPERTY()
@@ -57,6 +71,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<USoundBase> BoundMusic;
+
+	UPROPERTY()
+	TObjectPtr<ATriangleProceduralHumSource> HumSource;
 
 	float CurrentVolume = 0.4f;
 	float MusicBaseVolume = 1.f;

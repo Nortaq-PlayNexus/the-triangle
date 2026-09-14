@@ -1,5 +1,6 @@
 #include "Core/ATriangleGameMode.h"
 
+#include "Triangle.h"
 #include "AI/ENightmareEntityState.h"
 #include "Characters/ATriangleCharacter.h"
 #include "Characters/ATrianglePlayerController.h"
@@ -13,10 +14,6 @@ ATriangleGameMode::ATriangleGameMode()
 	DefaultPawnClass = ATriangleCharacter::StaticClass();
 	PlayerControllerClass = ATrianglePlayerController::StaticClass();
 	HUDClass = ATriangleHUD::StaticClass();
-
-	// Preferred setup for a tight first-person horror: no player start required,
-	// the room builder positions the camera itself.
-	DefaultPlayerStart = nullptr;
 }
 
 void ATriangleGameMode::StartPlay()

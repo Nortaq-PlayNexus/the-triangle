@@ -29,6 +29,12 @@ public:
 	void SetLucidityMeterVisible(bool bVisible);
 
 	UFUNCTION(BlueprintCallable, Category = "Triangle|HUD")
+	void SetRecognitionValue(float Value01);
+
+	UFUNCTION(BlueprintCallable, Category = "Triangle|HUD")
+	void SetRecognitionMeterVisible(bool bVisible);
+
+	UFUNCTION(BlueprintCallable, Category = "Triangle|HUD")
 	void PushSubtitle(const FText& Text, float Duration);
 
 protected:
@@ -45,6 +51,10 @@ private:
 	TObjectPtr<UProgressBar> LucidityBar;
 	UPROPERTY()
 	TObjectPtr<UTextBlock> LucidityLabel;
+	UPROPERTY()
+	TObjectPtr<UProgressBar> RecognitionBar;
+	UPROPERTY()
+	TObjectPtr<UTextBlock> RecognitionLabel;
 	UPROPERTY()
 	TObjectPtr<UTextBlock> SubtitleText;
 

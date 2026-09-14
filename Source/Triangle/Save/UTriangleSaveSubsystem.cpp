@@ -4,8 +4,10 @@
 #include "Save/UTriangleSaveGame.h"
 
 #include "Characters/ATriangleCharacter.h"
+#include "Characters/ATrianglePlayerController.h"
 #include "Core/FTriangleGameplayStatics.h"
 #include "Lucidity/ULTriangleLucidityComponent.h"
+#include "Lucidity/ULTriangleRecognitionComponent.h"
 
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
@@ -80,6 +82,12 @@ UTriangleSaveGame* UTriangleSaveSubsystem::BuildSnapshot()
 	if (ULTriangleLucidityComponent* Lucidity = FTriangleGameplayStatics::GetPlayerLucidity(World))
 	{
 		Save->Lucidity = Lucidity->GetLucidity();
+	}
+
+	// Recognition.
+	if (ULTriangleRecognitionComponent* Recognition = FTriangleGameplayStatics::GetPlayerRecognition(World))
+	{
+		Save->Recognition = Recognition->GetRecognition();
 	}
 
 	return Save;

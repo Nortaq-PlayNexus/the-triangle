@@ -25,6 +25,10 @@ public:
 	UPROPERTY()
 	float Lucidity = 0.f;
 
+	/** Current hidden Recognition value (0..100) - the pattern catalogue. */
+	UPROPERTY()
+	float Recognition = 0.f;
+
 	/** Has the player interacted with the notebook at least once. */
 	UPROPERTY()
 	bool bNotebookInteracted = false;

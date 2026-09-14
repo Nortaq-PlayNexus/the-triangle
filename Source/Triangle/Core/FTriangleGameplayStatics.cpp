@@ -6,6 +6,7 @@
 #include "Save/UTriangleSaveSubsystem.h"
 #include "UI/ATriangleHUD.h"
 #include "Lucidity/ULTriangleLucidityComponent.h"
+#include "Lucidity/ULTriangleRecognitionComponent.h"
 
 #include "Engine/World.h"
 #include "GameFramework/GameModeBase.h"
@@ -54,4 +55,14 @@ ULTriangleLucidityComponent* FTriangleGameplayStatics::GetPlayerLucidity(const U
 		return nullptr;
 	}
 	return PC->GetPawn()->FindComponentByClass<ULTriangleLucidityComponent>();
+}
+
+ULTriangleRecognitionComponent* FTriangleGameplayStatics::GetPlayerRecognition(const UWorld* World)
+{
+	ATrianglePlayerController* PC = GetTrianglePlayerController(World);
+	if (!PC || !PC->GetPawn())
+	{
+		return nullptr;
+	}
+	return PC->GetPawn()->FindComponentByClass<ULTriangleRecognitionComponent>();
 }

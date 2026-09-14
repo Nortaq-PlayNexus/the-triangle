@@ -27,6 +27,9 @@ public:
 	void SetLucidityMeterVisible(bool bVisible);
 
 	UFUNCTION(BlueprintCallable, Category = "Triangle|HUD")
+	void SetRecognitionMeterVisible(bool bVisible);
+
+	UFUNCTION(BlueprintCallable, Category = "Triangle|HUD")
 	void PushSubtitle(const FText& Text, float Duration);
 
 private:

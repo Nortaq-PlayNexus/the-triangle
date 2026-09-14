@@ -1,7 +1,7 @@
 #include "Lucidity/ULTriangleLucidityComponent.h"
 
 #include "Triangle.h"
-#include "UObject/Enum.h"
+#include "UObject/Class.h"
 
 ULTriangleLucidityComponent::ULTriangleLucidityComponent()
 {

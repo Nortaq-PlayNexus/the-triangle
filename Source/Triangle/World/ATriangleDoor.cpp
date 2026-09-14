@@ -5,6 +5,7 @@
 #include "Core/FTriangleGameplayStatics.h"
 #include "Interaction/UTriangleInteractableComponent.h"
 #include "Lucidity/ULTriangleLucidityComponent.h"
+#include "UI/ATriangleHUD.h"
 
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -25,7 +26,9 @@ ATriangleDoor::ATriangleDoor()
 	{
 		DoorMesh->SetStaticMesh(CubeMesh.Object);
 	}
-	DoorMesh->SetRelativeScale3D(FVector(1.0f, 0.15f, 2.1f));
+	// Door panel ~15 cm thick, ~100 cm wide, ~210 cm tall - matching the
+	// front-wall gap built by the room builder.
+	DoorMesh->SetRelativeScale3D(FVector(0.15f, 1.0f, 2.1f));
 	DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));
 
 	Interactable = CreateDefaultSubobject<UTriangleInteractableComponent>(TEXT("Interactable"));

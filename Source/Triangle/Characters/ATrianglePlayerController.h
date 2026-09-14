@@ -26,5 +26,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Triangle|HUD")
 	void SetLucidityMeterVisible(bool bVisible);
 
+	/** Toggles the recognition meter visibility (usually hidden). */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|HUD")
+	void SetRecognitionMeterVisible(bool bVisible);
+
 	ATriangleHUD* GetTriangleHUD() const;
 };

@@ -11,6 +11,7 @@ class UInputAction;
 class UInputMappingContext;
 class UTriangleInteractableComponent;
 class ULTriangleLucidityComponent;
+class ULTriangleRecognitionComponent;
 
 /**
  * First-person dream walker.
@@ -57,6 +58,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Triangle|Lucidity")
 	TObjectPtr<ULTriangleLucidityComponent> Lucidity;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Triangle|Recognition")
+	TObjectPtr<ULTriangleRecognitionComponent> Recognition;
+
+	/** View-agnostic way for systems to reach the hidden Recognition stat. */
+	ULTriangleRecognitionComponent* GetRecognitionComponent() const { return Recognition; }
+
 	// --- Interaction scanning --------------------------------------------
 	void ScanForInteractable();
 	void SetFocusedInteractable(UTriangleInteractableComponent* NewFocus);
@@ -68,6 +75,7 @@ protected:
 	void StartJump(const FInputActionValue& Value);
 	void StopJump(const FInputActionValue& Value);
 	void PressInteract(const FInputActionValue& Value);
+	void PressWake(const FInputActionValue& Value);
 	void QuickSave(const FInputActionValue& Value);
 	void QuickLoad(const FInputActionValue& Value);
 
@@ -83,6 +91,8 @@ private:
 	TObjectPtr<UInputAction> ActionJump;
 	UPROPERTY()
 	TObjectPtr<UInputAction> ActionInteract;
+	UPROPERTY()
+	TObjectPtr<UInputAction> ActionWake;
 	UPROPERTY()
 	TObjectPtr<UInputAction> ActionSave;
 	UPROPERTY()

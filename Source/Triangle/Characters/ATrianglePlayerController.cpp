@@ -23,6 +23,14 @@ void ATrianglePlayerController::SetLucidityMeterVisible(bool bVisible)
 	}
 }
 
+void ATrianglePlayerController::SetRecognitionMeterVisible(bool bVisible)
+{
+	if (ATriangleHUD* HUD = GetTriangleHUD())
+	{
+		HUD->SetRecognitionMeterVisible(bVisible);
+	}
+}
+
 ATriangleHUD* ATrianglePlayerController::GetTriangleHUD() const
 {
 	return Cast<ATriangleHUD>(GetHUD());

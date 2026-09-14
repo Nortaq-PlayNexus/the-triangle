@@ -9,6 +9,7 @@
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/LightComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/ExponentialHeightFog.h"
@@ -47,7 +48,7 @@ void ATriangleRoomBuilder::BeginPlay()
 		World->SpawnActor<APlayerStart>(FVector(0.f, 0.f, 92.f), FRotator::ZeroRotator, SpawnParams);
 	}
 
-	UE_LOG(LogTriangle, Log, TEXT("Childhood bedroom assembled (%s)."), *GetWorld() ? *GetWorld()->GetName() : TEXT("?"));
+	UE_LOG(LogTriangle, Log, TEXT("Childhood bedroom assembled (%s)."), GetWorld() ? *GetWorld()->GetName() : TEXT("?"));
 }
 
 UStaticMesh* ATriangleRoomBuilder::GetCubeMesh()
@@ -131,7 +132,7 @@ void ATriangleRoomBuilder::BuildWindow()
 	}
 
 	// Moonlight rakes across the room from high behind the window.
-	ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FRotator(-35.f, -45.f, 0.f));
+	ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FTransform(FRotator(-35.f, -45.f, 0.f)));
 	if (Moon)
 	{
 		Moon->GetLightComponent()->SetIntensity(0.35f);
@@ -214,7 +215,10 @@ void ATriangleRoomBuilder::BuildLighting()
 	if (Fill)
 	{
 		Fill->GetLightComponent()->SetIntensity(9.f);
-		Fill->GetLightComponent()->SetAttenuationRadius(850.f);
+		if (UPointLightComponent* FillLight = Cast<UPointLightComponent>(Fill->GetLightComponent()))
+		{
+			FillLight->SetAttenuationRadius(850.f);
+		}
 		Fill->GetLightComponent()->SetLightColor(FLinearColor(0.62f, 0.55f, 0.44f));
 		Fill->GetLightComponent()->SetCastShadows(false);
 	}
@@ -224,7 +228,10 @@ void ATriangleRoomBuilder::BuildLighting()
 	if (WindowLight)
 	{
 		WindowLight->GetLightComponent()->SetIntensity(28.f);
-		WindowLight->GetLightComponent()->SetAttenuationRadius(1100.f);
+		if (UPointLightComponent* WindowLightComponent = Cast<UPointLightComponent>(WindowLight->GetLightComponent()))
+		{
+			WindowLightComponent->SetAttenuationRadius(1100.f);
+		}
 		WindowLight->GetLightComponent()->SetLightColor(FLinearColor(0.55f, 0.68f, 0.95f));
 		WindowLight->GetLightComponent()->SetCastShadows(false);
 	}

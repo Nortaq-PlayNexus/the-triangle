@@ -37,12 +37,18 @@ void UTriangleHUDWidget::EnsureChildWidgets()
 	InteractionAction = MakeText(TEXT("InteractionAction"), FLinearColor(0.92f, 0.92f, 0.96f), 20.f);
 	InteractionName = MakeText(TEXT("InteractionName"), FLinearColor(0.55f, 0.55f, 0.60f), 12.f);
 	LucidityLabel = MakeText(TEXT("LucidityLabel"), FLinearColor(0.42f, 0.10f, 0.22f), 10.f);
+	RecognitionLabel = MakeText(TEXT("RecognitionLabel"), FLinearColor(0.10f, 0.22f, 0.30f), 10.f);
 	SubtitleText = MakeText(TEXT("SubtitleText"), FLinearColor(0.92f, 0.92f, 0.96f), 16.f);
 
 	LucidityBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("LucidityBar"));
 	LucidityBar->SetFillColorAndOpacity(FLinearColor(0.42f, 0.10f, 0.22f));
 	LucidityBar->SetPercent(0.f);
 	LucidityBar->SetVisibility(ESlateVisibility::Collapsed);
+
+	RecognitionBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("RecognitionBar"));
+	RecognitionBar->SetFillColorAndOpacity(FLinearColor(0.10f, 0.22f, 0.30f));
+	RecognitionBar->SetPercent(0.f);
+	RecognitionBar->SetVisibility(ESlateVisibility::Collapsed);
 
 	auto SlotAt = [Root](UWidget* Widget, const FVector2D& Position)
 	{
@@ -63,14 +69,22 @@ void UTriangleHUDWidget::EnsureChildWidgets()
 	SlotAt(LucidityLabel, FVector2D(20.f, 30.f));
 	SlotAt(LucidityBar, FVector2D(20.f, 48.f));
 
+	// Recognition meter (directly under lucidity, hidden by default - the
+	// player should not normally read their own recognition as a number).
+	SlotAt(RecognitionLabel, FVector2D(20.f, 68.f));
+	SlotAt(RecognitionBar, FVector2D(20.f, 86.f));
+
 	// The meter widths are set when caption+bar are shown.
 	LucidityBar->SetRenderScale(FVector2D(3.2f, 0.7f));
+	RecognitionBar->SetRenderScale(FVector2D(3.2f, 0.7f));
 
 	InteractionAction->SetVisibility(ESlateVisibility::Collapsed);
 	InteractionName->SetVisibility(ESlateVisibility::Collapsed);
 	SubtitleText->SetVisibility(ESlateVisibility::Collapsed);
 	LucidityLabel->SetVisibility(ESlateVisibility::Collapsed);
 	LucidityBar->SetVisibility(ESlateVisibility::Collapsed);
+	RecognitionLabel->SetVisibility(ESlateVisibility::Collapsed);
+	RecognitionBar->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UTriangleHUDWidget::SetInteractionPrompt(const FText& Text, const FText& ActionName)
@@ -111,6 +125,26 @@ void UTriangleHUDWidget::SetLucidityMeterVisible(bool bVisible)
 	const ESlateVisibility Vis = bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed;
 	LucidityBar->SetVisibility(Vis);
 	LucidityLabel->SetVisibility(Vis);
+}
+
+void UTriangleHUDWidget::SetRecognitionValue(float Value01)
+{
+	if (!RecognitionBar)
+	{
+		EnsureChildWidgets();
+	}
+	RecognitionBar->SetPercent(FMath::Clamp(Value01, 0.f, 1.f));
+}
+
+void UTriangleHUDWidget::SetRecognitionMeterVisible(bool bVisible)
+{
+	if (!RecognitionBar)
+	{
+		EnsureChildWidgets();
+	}
+	const ESlateVisibility Vis = bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed;
+	RecognitionBar->SetVisibility(Vis);
+	RecognitionLabel->SetVisibility(Vis);
 }
 
 void UTriangleHUDWidget::PushSubtitle(const FText& Text, float Duration)

@@ -19,5 +19,34 @@ Session-by-session account of what actually happened.
 ### Next session
 1. Confirm VS C++/SDK workload finished (cl.exe + Windows Kits present).
 2. Have the user log into the Epic launcher and install Unreal Engine 5.6.x.
-3. Revalidate EngineAssociation → generate project files → first compile → fix errors → PIE test movement/interaction/save/lucidity.
+3. Revalidate EngineAssociation —> generate project files —> first compile —> fix errors —> PIE test movement/interaction/save/lucidity.
 4. Commit; update this log + DEVELOPMENT_STATUS.md + remember files.
+
+## 2026-09-14 — Design-spec follow-up integrated (recognition, hum, manifestation/intrusion systems)
+
+The writer appended a major follow-up to `new 1.txt` (lines ~1211-1669): The Triangle is an intrusion, not a monster; the hum; no single body; "cutting into the dream" effects; a full Recognition system; dream realism; the human form; the clock and platform twelve; lucidity ≠ invincibility; the unreliable wake; the Floating Man (reserved); the "how does the player recognise it" narrative principle; an atmospheric rule of less-is-more.
+
+Integrated into the existing architecture as real systems (all written, none compiled yet — still gated on the engine):
+
+- `Lucidity/ULTriangleRecognitionComponent` — separate hidden Recognition stat (0..100, Unknowing/Noticing/Recognizing/Anticipating/Master), deduplicated pattern-catalogue of witnessed manifestation ids, pre-visual "it's here" sensing.
+- `Dream/UTriangleManifestationDefinition` (DataAsset) + `Dream/ETriangleManifestationKind` (Point, HumOnly, TriangularGap, CornerSplit, DistantBlackPoint, TriangularDoorway, HumanForm-reserved).
+- `Nightmare/ATriangleAnomalyActor` + `UTriangleAnomalySubsystem` — the "cuts into the dream": razor gaps, corner splits, distant black points, impossible doorway triangles; scale-fade in/out, concurrent budget, despawn-on-reset.
+- `Audio/ATriangleProceduralHumSource` — the hum, synthesised entirely at runtime (two detuned partials ~43/47 Hz breathing), zero audio assets; `UTriangleAudioSubsystem::SetHumPresence` drives it.
+- `Core/UTriangleMotifSubsystem` — dream clock + recurring motifs (ClockStops12, Platform12Train) with cooldowns and recognition gates.
+- `Dream/UTriangleFalseAwakeningManager` — recognition-gated wake (Q), layered difference lines, `OnWakeResetRequested`.
+- `Dream/ATriangleDreamDirector` — rebuilt: 0..1 presence ramp with Start/Increase/Disappear events, hum following, weighted manifestation pool, Master-sense hum-only appearances, motif hooks, wake withdrawal, anomaly spawning.
+- Wired through `ATriangleCharacter` (Recognition component, Q = wake), save (Recognition member), HUD (optional recognition meter), `FTriangleGameplayStatics::GetPlayerRecognition`.
+
+Docs updated: DREAM_SYSTEM, TECHNICAL_ARCHITECTURE, DEVELOPMENT_STATUS.
+
+### Next session
+1. Confirm VS C++/SDK workload finished (cl.exe + Windows Kits present).
+2. User logs into the Epic launcher and installs Unreal Engine 5.6.x (download reportedly started).
+3. Revalidate EngineAssociation —> generate project files —> first compile —> fix errors —> PIE test movement/interaction/save/lucidity/recognition/hum/wake.
+4. Commit; update this log + DEVELOPMENT_STATUS.md + remember files.
+## 2026-09-14 (eve) � Toolchain + first successful compile on UE 5.8.2
+- Toolchain: VS Build Tools 17.14 C++ workload (MSVC 14.44.35207) + Windows SDK 10.0.26100.0 installed via the VS Installer GUI (bootstrapper/engine command lines fail silently on this box). .NET Framework 4.8 SDK added for UBT SwarmInterface.
+- Engine upgraded target: UE 5.8.2 at D:\Program Files\UE_5.8 (user installed 5.8, not 5.6). Triangle.uproject EngineAssociation set to "5.8".
+- Targets moved to BuildSettingsVersion.V7; Build.cs adds ModuleDirectory to PublicIncludePaths.
+- First TriangleEditor build SUCCEEDED after fixing 5.8 API breaks (Enum.h->Class.h, EnhancedInput Context removal, AudioComponent AdjustVolume, USoundWaveProcedural GetSampleRate/GetNumChannels removal, auto* range-for over TObjectPtr, GameMode DefaultPlayerStart removal, light component casts/includes, SpawnActor FRotator overload removal).
+- Next: editor launch + first PIE runtime test.

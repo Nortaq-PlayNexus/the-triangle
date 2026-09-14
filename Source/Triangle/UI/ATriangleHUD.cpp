@@ -38,6 +38,14 @@ void ATriangleHUD::SetLucidityMeterVisible(bool bVisible)
 	}
 }
 
+void ATriangleHUD::SetRecognitionMeterVisible(bool bVisible)
+{
+	if (HUDWidget)
+	{
+		HUDWidget->SetRecognitionMeterVisible(bVisible);
+	}
+}
+
 void ATriangleHUD::PushSubtitle(const FText& Text, float Duration)
 {
 	if (HUDWidget)
