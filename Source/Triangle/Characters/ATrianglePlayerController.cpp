@@ -1,0 +1,29 @@
+#include "Characters/ATrianglePlayerController.h"
+
+#include "UI/ATriangleHUD.h"
+
+ATrianglePlayerController::ATrianglePlayerController()
+{
+	PrimaryActorTick.bCanEverTick = false;
+}
+
+void ATrianglePlayerController::SetInteractionPrompt(const FText& Text, const FText& ActionName)
+{
+	if (ATriangleHUD* HUD = GetTriangleHUD())
+	{
+		HUD->SetInteractionPrompt(Text, ActionName);
+	}
+}
+
+void ATrianglePlayerController::SetLucidityMeterVisible(bool bVisible)
+{
+	if (ATriangleHUD* HUD = GetTriangleHUD())
+	{
+		HUD->SetLucidityMeterVisible(bVisible);
+	}
+}
+
+ATriangleHUD* ATrianglePlayerController::GetTriangleHUD() const
+{
+	return Cast<ATriangleHUD>(GetHUD());
+}
