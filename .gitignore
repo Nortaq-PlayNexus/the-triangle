@@ -29,3 +29,6 @@ Desktop.ini
 
 # Logs
 *.log
+/build_output.txt
+/editor_*_output*.txt
+/Saved/Automation/

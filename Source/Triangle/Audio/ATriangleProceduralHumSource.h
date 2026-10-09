@@ -65,4 +65,7 @@ private:
 	double DetunePhase = 0.0;
 
 	FTimerHandle FeedTimerHandle;
+
+	/** Reused PCM staging buffer; QueueAudio copies before the timer returns. */
+	TArray<int16> SynthBuffer;
 };

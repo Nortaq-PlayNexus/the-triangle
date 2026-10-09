@@ -16,9 +16,7 @@ public class Triangle : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
-			"UMG",
-			"Niagara",
-			"MetasoundEngine"
+			"UMG"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

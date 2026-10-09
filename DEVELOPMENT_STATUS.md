@@ -1,90 +1,55 @@
 # DEVELOPMENT STATUS
 
-_Last updated: 2026-09-14_
+_Last updated: 2026-09-24_
 
 ## Snapshot
 
 - **Project:** THE TRIANGLE (`C:\Users\natha\projects\the-triangle`)
-- **Engine:** Unreal Engine **5.8.2** at `D:\Program Files\UE_5.8`. Epic Games Launcher installed and logged in.
-- **Toolchain:** Visual Studio Build Tools 2022 (17.14, MSVC 14.44.35207) + Windows SDK 10.0.26100.0 installed via VS Installer GUI. .NET Framework 4.8 SDK added for UBT SwarmInterface. CMake not required (UnrealBuildTool).
-- **Machine:** i7-8700 / 24 GB / GTX 1080 8 GB / Windows 10 Home 10.0.19045 / ~1.7 TB free on C:.
-- **Hardware targets:** 1080p, 60 FPS where achievable on the GTX 1080. SM5 + dynamic lighting, baked/static lighting where it wins. (See `PERFORMANCE.md`.)
-- **Build status:** TriangleEditor build **succeeds** on UE 5.8.2 after fixing 8 API breaks (Enum.h→Class.h, EnhancedInput Context removal, AudioComponent AdjustVolume, USoundWaveProcedural methods, auto* range-for over TObjectPtr, GameMode DefaultPlayerStart, light casts/includes, SpawnActor FRotator overload). PIE runtime test pending.
+- **Engine:** Unreal Engine **5.8.2** at `D:\Program Files\UE_5.8`.
+- **Target hardware:** i7-8700 / 24 GB / GTX 1080 8 GB / Windows 10 Home; 1080p target with a stable 30+ FPS floor.
+- **Source state:** The bedroom/station vertical-slice source pass is complete for this revamp. Native code covers the environment flow, persistence, director safeguards, procedural audio, responsive HUD/input, and core automation tests; runtime validation remains pending.
+- **Build gate:** `scripts/Test-UnrealInstall.ps1` confirms the Launcher precompiled rules assemblies, then reports **4 missing TextureFormatOodle redistributables** (2.9.5, 2.9.14, 2.9.15, 2.9.16); the optional Live Coding helper warning is non-fatal. UnrealBuildTool therefore fails before compiling `Triangle`. Epic Games Launcher → UE 5.8 → Manage → **Verify** is required before a trustworthy editor/game build or PIE smoke test.
 
-## Phase status (from the design doc)
+## Phase status
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Project, first-person controller, interaction, save, Dream Director, Lucidity, first bedroom, playable | **Complete** — compiled, awaiting PIE runtime test |
-| 2 | Underground station, train sequence, Triangle manifestation | **In progress** — station builder in development |
-| 3 | Mansion, dream bleeding | Not started |
-| 4 | Castle, Floating Man | Not started |
-| 5 | Witches | Not started |
-| 6 | Clock room | Not started |
-| 7 | False awakenings | Not started |
-| 8 | Notebook + memory system | Partially wired (notebook prop in slice) |
-| 9 | Final fused dream | Not started |
-| 10 | Ending + menu transformation | Not started |
-| 11 | Optimization | Not started |
-| 12 | QA | Not started |
+| 1 | Project, first-person controller, interaction, save, Dream Director, Lucidity, first bedroom | **Source complete; runtime gate pending engine verification** |
+| 2 | Underground station, train sequence, Platform 12 motif | **Source integrated; runtime gate pending engine verification** |
+| 3 | Mansion, dream bleeding | Planned after slice acceptance |
+| 4 | Castle, Floating Man | Planned after slice acceptance |
+| 5 | Witches | Planned after slice acceptance |
+| 6 | Clock room | Planned after slice acceptance; bedroom clock motif now has a physical anchor |
+| 7 | False awakenings | Manager and persistence hooks implemented; environment transformations remain a production phase |
+| 8 | Notebook + memory system | Slice notebook and versioned interaction persistence implemented |
+| 9 | Final fused dream | Planned |
+| 10 | Ending + menu transformation | Planned |
+| 11 | Optimization | Slice budgets/configuration added; profile after build repair |
+| 12 | QA | Automation tests added; PIE acceptance pending |
 
-## What is implemented (compiled, PIE test pending)
+## Revamp systems now in source
 
-Everything below is complete, compiled C++ source in `Source/Triangle/…`. Code is verified to build on UE 5.8.2. Runtime behaviour is unverified until PIE.
+- `UTriangleGameFlowSubsystem` swaps and tears down procedural environments, relocates the pawn to tagged starts, and binds the bedroom door to the station transition.
+- `ATriangleRoomBuilder` and `ATriangleStationBuilder` own all runtime actors they spawn, including a physical twelve clock, Platform 12 text, lights, player starts, and Triangle points.
+- `ATriangleDoor` opens at High Lucidity, remains interactable, and requests a deliberate second-interaction transition.
+- `ATriangleTrain` has real BasicShapes geometry, safe door toggling, a dark interior aperture, and interaction.
+- `ATriangleDreamDirector` uses recognition gates, selection weights, per-body cooldowns, witnessed checks, and serialised manifestation timers.
+- `UTriangleFalseAwakeningManager` has bounded wake attempts, cancellable delayed callbacks, and restorable wake depth.
+- `UTriangleSaveGame` / `UTriangleSaveSubsystem` use schema versioning with explicit legacy migration, environment-relative player transforms, catalogue persistence, transactional `Applied`/`Queued`/`Failed` results, environment/door/notebook fields, safe restoration, and explicit slot deletion.
+- `ULTriangleLucidityComponent` and `ULTriangleRecognitionComponent` restore values without replaying progression milestones.
+- `UTriangleAudioSubsystem` and `ATriangleProceduralHumSource` provide persistent state routing and a buffered runtime hum.
+- `ATriangleHUDWidget` / input work is source-complete around responsive anchors, queued subtitles, meter synchronization, gamepad input, pause, and transition fade.
+- `Source/Triangle/Tests/TriangleCoreTests.cpp` covers manifestation bounds, recognition catalogue restoration, lucidity clamping, and save schema creation.
 
-- `Core/FTriangleGameplayStatics` — typed accessors for Dream Director, controller, HUD, save subsystem, lucidity, recognition.
-- `Core/ATriangleGameMode` — spawns the Dream Director per session.
-- `Core/UTriangleMotifSubsystem` — dream clock + recurring-motif scheduler (ClockStops12, Platform12Train) with cooldowns + recognition gates.
-- `Save/UTriangleSaveGame` + `Save/UTriangleSaveSubsystem` — synchronous local save (player transform, lucidity, recognition, notebook/memory arrays, environment flags) + hotkey F5 save / F9 load.
-- `Lucidity/ULTriangleLucidityComponent` — 0..100 hidden meter, Low/Medium/High/Max levels, gain via dream events, max event.
-- `Lucidity/ULTriangleRecognitionComponent` — 0..100 hidden Recognition meter, five stages (Unknowing→Master), pattern-catalogue of witnessed manifestations, "it's here" sensing.
-- `Interaction/UTriangleInteractableComponent` — reusable focus/interact component.
-- `Characters/ATriangleCharacter` — Enhanced-Input first-person pawn (move/look/jump/interact/wake); sphere-overlap interaction finder; camera getter for the director; F5/F9/Q binds.
-- `Characters/ATrianglePlayerController`, `UI/ATriangleHUD`, `UI/UTriangleHUDWidget` — in-C++ UMG HUD (interaction prompt, lucidity bar, optional recognition bar, subtitles), no content assets.
-- `Dream/ATriangleDreamDirector` — presence model (0..1 ramp + hum + events), weighted manifestation pool (6 bodies), Master-sense hum-only appearances, motifs, wake withdrawal, corner-watch loop.
-- `Dream/ATriangleTrianglePoint` — tiny emissive ceiling-corner point, manifest/hide, never inspectable; body #1 in the pool.
-- `Dream/UTriangleManifestationDefinition` + `Dream/ETriangleManifestationKind` — data asset describing a Triangle body (kind, hum, duration, recognition gain, cooldown).
-- `Dream/UTriangleFalseAwakeningManager` — layered false-wake cycles (Q), recognition-gated, difference lines, wake-reset signal to the Director.
-- `Nightmare/UTriangleAnomalySubsystem` + `Nightmare/ATriangleAnomalyActor` — "cuts into the dream": razor gaps, corner splits, distant black points, impossible doorways; self-fading, budgeted, despawn-on-reset.
-- `Audio/UTriangleAudioSubsystem` — persistent dream bed, named state tiers with fades, near-silence for manifestations, spatial one-shots, hum control.
-- `Audio/ATriangleProceduralHumSource` — the Triangle's signature hum, generated entirely at runtime (two detuned partials, breathing) — zero audio assets required.
-- `World/ATriangleRoomBuilder` — procedural childhood bedroom (shell, window, moon light, fog, bed, desk, player start at +5000 elevation) from engine BasicShapes.
-- `World/ATriangleDoor` — refuses to open until High lucidity, then swings into darkness.
-- `World/ATriangleNotebook` — three-page dream memory prop; adds lucidity + subtitles.
-- `World/ATriangleStationBuilder` — procedural underground station (in development, Phase 2).
-- `AI/ENightmareEntityState` — shared entity states (Idle/Follow/Observe/…/LeadPlayer/Wait) for later nightmare entities.
+## Current blockers
 
-## Design-spec follow-up integrated (2026-09-14, pre-compile)
-
-The additions the writer appended to the design prompt are implemented as real systems, not prose:
-
-- Triangle as an **intrusion** → manifestation pool + anomaly cuts instead of a single monster body.
-- The **Hum** → runtime-synthesised procedural drone driven by presence.
-- **No single body** → six bodies, including zero-visible (hum-only).
-- **"Cutting into the dream"** → razor-thin gaps, corner splits, distant points, doorway cuts.
-- **Recognition system** → separate hidden stat with 5 stages; pre-visual "it's here" sensing.
-- **Clock 12 / Platform 12** → recurring motifs on a dream clock.
-- **Lucidity ≠ invincibility** → presence persists regardless; lucidity only grants pattern-rule breaks.
-- **Unreliable wake** → false-awakening manager with layered differences.
-- **Atmospheric discipline** → hum/corner simplicity; subtitles are sparse, anticipatory, never jumpscare.
-
-## Technical decisions (see TECHNICAL_ARCHITECTURE.md for detail)
-
-1. **Single runtime module `Triangle`** with internal folders matching the design doc structure — keeps build times and coupling manageable; split into plugins only if a system is reused across titles.
-2. **Gameplay classes default to no-tick:** interaction scans on a timer, lucidity is event-driven, the director only ticks while the player exists.
-3. **Enhanced Input configured entirely in C++** (actions + mapping context built at runtime) so the slice runs with zero content assets.
-4. **Procedural environment using `/Engine/BasicShapes`** until licensed assets land; isolated in one builder class so it can be replaced atomically.
-5. **C++ HUD widget** (no Blueprint dependency) for the same reason.
-6. **Room elevation offset (+5000):** all procedural actors spawn at world altitude 5000 to avoid template terrain; the room interior is below this elevation.
-
-## Blocked on this machine
-
-- PIE runtime test — needs editor launch and play test.
-- Then: station (Phase 2).
+1. **UE installation integrity:** the precompiled UBT rule assemblies are present, but four TextureFormatOodle redistributables required while constructing the editor target are missing (2.9.5, 2.9.14, 2.9.15, 2.9.16). The absent Live Coding helper library is reported as a non-fatal warning. Do not patch the engine installation manually; use Launcher Verify/repair.
+2. **Runtime validation:** no PIE, packaged, or automation run can be claimed until the engine is repaired and `TriangleEditor` builds.
 
 ## Next actions
 
-1. Launch editor, open `Triangle.uproject`, generate project files, compile.
-2. PIE test: movement, interaction, save/load, lucidity loop, recognition, hum, wake.
-3. Fix any runtime issues found.
-4. Continue Phase 2 (underground station).
+1. In Epic Games Launcher, verify UE 5.8.2 and rerun `scripts/Test-UnrealInstall.ps1` until it reports complete precompiled rules and native payloads.
+2. Build with `scripts/Build-Triangle.ps1 -Target Editor`.
+3. Run `scripts/Test-Triangle.ps1`.
+4. PIE smoke test: bedroom spawn → notebook page → corner manifestation → High Lucidity door → second interaction → Platform 12 → wrong train → save → restart → load.
+5. Profile the GTX 1080 and only then promote the slice from pre-alpha to alpha.

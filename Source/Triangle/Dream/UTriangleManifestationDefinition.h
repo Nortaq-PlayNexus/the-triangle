@@ -47,6 +47,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Triangle|Manifest", meta = (ClampMin = "0", ClampMax = "30"))
 	float RecognitionGainOnSight = 6.f;
 
+	/** This body cannot be selected until the player has noticed the earlier pattern. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Triangle|Manifest", meta = (ClampMin = "0", ClampMax = "100"))
+	float MinimumRecognition = 0.f;
+
+	/** Relative selection weight after the recognition gate is satisfied. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Triangle|Manifest", meta = (ClampMin = "0", ClampMax = "100"))
+	float SelectionWeight = 1.f;
+
 	/** Minimum gap between consecutive appearances of this body. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Triangle|Manifest", meta = (ClampMin = "3", ClampMax = "120"))
 	float CooldownSeconds = 18.f;

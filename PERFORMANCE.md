@@ -19,8 +19,9 @@
 
 ## Engineering rules (already enforced)
 
-- **No ticking hordes.** Interaction scans run on a 0.08 s timer; lucidity is event-driven; the Dream Director exists to centralise work and gate it on a player existing; doors stop ticking mid-swing when done.
-- **Procedural geometry from one shared builder** (few bodies, shared meshes) until real assets, which arrive with LODs + instancing.
+- **No ticking hordes.** Interaction scans run on a 0.08 s timer; lucidity is event-driven; the Dream Director exists to centralise work and gate it on a player existing; doors stop ticking mid-swing when done. The character no longer polls interaction validity every frame.
+- **Procedural geometry from one shared builder** (few bodies, shared meshes) until real assets, which arrive with LODs + instancing. Builders explicitly own and tear down runtime actors during transitions.
+- **Station lighting budget:** four fluorescent pools, four broad amber edge pools, one track fill, and shadowless skylight/fill lights; avoid reintroducing a light per decorative marker.
 - All future systems event-driven, pooled, asynchronous where it helps.
 - Profile with Unreal Insights per phase; measure the GTX 1080, not assumptions.
 

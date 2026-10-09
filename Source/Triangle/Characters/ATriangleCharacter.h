@@ -6,8 +6,10 @@
 #include "ATriangleCharacter.generated.h"
 
 class UCameraComponent;
+class UEnhancedInputComponent;
 class UEnhancedInputLocalPlayerSubsystem;
 class UInputAction;
+class UInputComponent;
 class UInputMappingContext;
 class UTriangleInteractableComponent;
 class ULTriangleLucidityComponent;
@@ -30,9 +32,11 @@ public:
 	ATriangleCharacter();
 
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void PawnClientRestart() override;
+	virtual void UnPossessed() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** The currently focused interactable (if any). */
 	UPROPERTY(BlueprintReadOnly, Category = "Triangle|Interaction")
@@ -46,15 +50,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Triangle|Interaction", meta = (ClampMin = "0.05", ClampMax = "1"))
 	float InteractionScanInterval = 0.08f;
 
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Triangle|Camera")
-	TObjectPtr<UCameraComponent> FirstPersonCamera;
-
-public:
 	/** The view camera (used by the Dream Director for line-of-sight logic). */
 	UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Triangle|Camera")
+	TObjectPtr<UCameraComponent> FirstPersonCamera;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Triangle|Lucidity")
 	TObjectPtr<ULTriangleLucidityComponent> Lucidity;
@@ -71,23 +72,37 @@ protected:
 	void UpdateInteractionPrompt();
 
 	// --- Input actions ----------------------------------------------------
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
+	void MoveForward(const FInputActionValue& Value);
+	void MoveRight(const FInputActionValue& Value);
+	void LookHorizontal(const FInputActionValue& Value);
+	void LookVertical(const FInputActionValue& Value);
 	void StartJump(const FInputActionValue& Value);
 	void StopJump(const FInputActionValue& Value);
 	void PressInteract(const FInputActionValue& Value);
 	void PressWake(const FInputActionValue& Value);
+	void PressPause(const FInputActionValue& Value);
 	void QuickSave(const FInputActionValue& Value);
 	void QuickLoad(const FInputActionValue& Value);
 
 private:
 	void EnsureInputBindings();
+	void StartInteractionScan();
+	bool TryAddInputContext();
+	void RetryAddInputContext();
+	void RemoveInputContext();
+	void PushHudSubtitle(const FText& Text, float Duration);
 
-	// Actions and mapping context are created at runtime in C++.
+	// Actions and mapping context are created at runtime in C++. Movement and
+	// look are split into Axis1D actions so keyboard and gamepad axes have
+	// explicit, testable signs instead of relying on implicit 2D key merging.
 	UPROPERTY()
-	TObjectPtr<UInputAction> ActionMove;
+	TObjectPtr<UInputAction> ActionMoveForward;
 	UPROPERTY()
-	TObjectPtr<UInputAction> ActionLook;
+	TObjectPtr<UInputAction> ActionMoveRight;
+	UPROPERTY()
+	TObjectPtr<UInputAction> ActionLookHorizontal;
+	UPROPERTY()
+	TObjectPtr<UInputAction> ActionLookVertical;
 	UPROPERTY()
 	TObjectPtr<UInputAction> ActionJump;
 	UPROPERTY()
@@ -99,8 +114,17 @@ private:
 	UPROPERTY()
 	TObjectPtr<UInputAction> ActionLoad;
 	UPROPERTY()
+	TObjectPtr<UInputAction> ActionPause;
+	UPROPERTY()
 	TObjectPtr<UInputMappingContext> InputContext;
 
+	UPROPERTY()
+	TObjectPtr<UInputComponent> BoundInputComponent;
+
+	TWeakObjectPtr<UEnhancedInputLocalPlayerSubsystem> ActiveInputSubsystem;
+	FTimerHandle InputContextRetryTimerHandle;
 	FTimerHandle ScanTimerHandle;
+	bool bInputContextAddedByCharacter = false;
+	bool bInputMappingsInitialized = false;
 	float EyesHeight = 88.f;
 };

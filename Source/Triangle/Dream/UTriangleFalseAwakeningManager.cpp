@@ -8,6 +8,7 @@
 
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
+#include "TimerManager.h"
 
 void UTriangleFalseAwakeningManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -26,10 +27,29 @@ void UTriangleFalseAwakeningManager::Initialize(FSubsystemCollectionBase& Collec
 	}
 }
 
+void UTriangleFalseAwakeningManager::Deinitialize()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(PendingDifferenceTimerHandle);
+	}
+	Super::Deinitialize();
+}
+
 bool UTriangleFalseAwakeningManager::TryWake()
 {
 	UWorld* World = GetWorld();
-	ATrianglePlayerController* PC = World ? FTriangleGameplayStatics::GetTrianglePlayerController(World) : nullptr;
+	if (!World)
+	{
+		return false;
+	}
+	if (World->GetTimeSeconds() < NextWakeAllowedTime)
+	{
+		return false;
+	}
+	World->GetTimerManager().ClearTimer(PendingDifferenceTimerHandle);
+
+	ATrianglePlayerController* PC = FTriangleGameplayStatics::GetTrianglePlayerController(World);
 
 	float PlayerRecognition = 0.f;
 	bool bHasRecognition = false;
@@ -52,36 +72,68 @@ bool UTriangleFalseAwakeningManager::TryWake()
 		return false;
 	}
 
+	if (LayerIndex >= 32)
+	{
+		if (PC && PC->GetTriangleHUD())
+		{
+			PC->GetTriangleHUD()->PushSubtitle(FText::FromString(TEXT("There is no deeper layer to find.")), 3.f);
+		}
+		return false;
+	}
+
 	// Layer 0: the player's first wake is the dream pretending for a single beat.
 	const int32 Layer = LayerIndex;
-	LayerIndex++;
+	LayerIndex = FMath::Min(LayerIndex + 1, 32);
 
 	if (PC && PC->GetTriangleHUD())
 	{
 		PC->GetTriangleHUD()->PushSubtitle(FText::FromString(TEXT("You wake up.")), 2.f);
+	}
 
-		// Then a small wrongness, deferred long enough to feel like the open eye.
-		if (World)
+	// Then a small wrongness, deferred long enough to feel like the open eye.
+	if (!DifferenceLines.IsEmpty())
+	{
+		const FText Difference = DifferenceLines.IsValidIndex(Layer) ? DifferenceLines[Layer] : DifferenceLines.Last();
+		TWeakObjectPtr<UTriangleFalseAwakeningManager> WeakThis(this);
+		TWeakObjectPtr<ATrianglePlayerController> WeakPC(PC);
+		World->GetTimerManager().SetTimer(PendingDifferenceTimerHandle, [WeakThis, WeakPC, Difference, Layer]()
 		{
-			const FText Difference = DifferenceLines.IsValidIndex(Layer) ? DifferenceLines[Layer] : DifferenceLines.Last();
-			FTimerHandle Handle;
-			World->GetTimerManager().SetTimer(Handle, [PC, Difference, Layer, this]()
+			UTriangleFalseAwakeningManager* Manager = WeakThis.Get();
+			ATrianglePlayerController* Controller = WeakPC.Get();
+			if (!Manager)
 			{
-				if (PC && PC->GetTriangleHUD())
-				{
-					PC->GetTriangleHUD()->PushSubtitle(Difference, 4.f);
-				}
-				OnFalseAwakening.Broadcast(Layer);
-			}, 2.2f, false);
-		}
+				return;
+			}
+			if (Controller && Controller->GetTriangleHUD())
+			{
+				Controller->GetTriangleHUD()->PushSubtitle(Difference, 4.f);
+			}
+			Manager->OnFalseAwakening.Broadcast(Layer);
+		}, 2.2f, false);
+	}
+	else
+	{
+		OnFalseAwakening.Broadcast(Layer);
 	}
 
 	CompletionCount++;
+	NextWakeAllowedTime = World->GetTimeSeconds() + 4.f;
 	// The release: the dream withdraws, gets its breath back, and starts again.
 	OnWakeResetRequested.Broadcast();
 
 	UE_LOG(LogTriangleDream, Log, TEXT("False wake %d ('%s')."), Layer, DescriptorFor(Layer));
 	return true;
+}
+
+void UTriangleFalseAwakeningManager::RestoreState(const int32 SavedLayer)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(PendingDifferenceTimerHandle);
+	}
+	LayerIndex = FMath::Clamp(SavedLayer, 0, 32);
+	CompletionCount = LayerIndex;
+	NextWakeAllowedTime = 0.f;
 }
 
 const TCHAR* UTriangleFalseAwakeningManager::DescriptorFor(int32 Layer)

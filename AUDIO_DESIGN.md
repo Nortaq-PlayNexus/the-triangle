@@ -32,4 +32,4 @@ Fades respect caller-provided durations; one-shots are spatial. When no sound co
 
 ## Slice status
 
-Routing and fades implemented in C++; no sound assets bound yet. Asset strategy: generated MetaSounds first (drone, ticks, hum), licensed CC0/CC-BY ambiences and room tones second — every source recorded in `ASSET_LICENSES.md`.
+Routing, state persistence, fades, and the runtime-synthesised hum are implemented in C++. The hum uses a buffered procedural PCM feed (48 kHz mono) so the zero-asset slice has a real signature sound rather than a placeholder. Asset strategy: generated MetaSounds first (drone, ticks, station/air handling), licensed CC0/CC-BY ambiences and room tones second — every source recorded in `ASSET_LICENSES.md`.

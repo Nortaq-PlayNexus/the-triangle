@@ -3,22 +3,23 @@
 #include "World/ATriangleTrain.h"
 #include "Dream/ATriangleTrianglePoint.h"
 #include "Triangle.h"
-#include "Components/BoxComponent.h"
+
+#include "Components/ExponentialHeightFogComponent.h"
+#include "Components/LightComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/TextRenderComponent.h"
+#include "Engine/ExponentialHeightFog.h"
 #include "Engine/PointLight.h"
-#include "Engine/StaticMeshActor.h"
+#include "Engine/SkyLight.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/StaticMeshActor.h"
+#include "Engine/TextRenderActor.h"
+#include "Engine/World.h"
 #include "GameFramework/PlayerStart.h"
 
 ATriangleStationBuilder::ATriangleStationBuilder()
 {
 	PrimaryActorTick.bCanEverTick = false;
-}
-
-UStaticMesh* ATriangleStationBuilder::GetCubeMesh()
-{
-	static TObjectPtr<UStaticMesh> CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	return CubeMesh.Get();
 }
 
 void ATriangleStationBuilder::BeginPlay()
@@ -38,38 +39,86 @@ void ATriangleStationBuilder::BeginPlay()
 	BuildLighting();
 
 	// Player spawn on the right-hand platform, facing the tracks.
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	if (UWorld* World = GetWorld())
+	SpawnedDreamStart = Cast<APlayerStart>(SpawnTrackedActor(
+		APlayerStart::StaticClass(),
+		FTransform(FRotator(0.f, -90.f, 0.f), FVector(0.f, 250.f, PlatformHeight + 100.f))));
+	if (SpawnedDreamStart)
 	{
-		APlayerStart* DreamStart = World->SpawnActor<APlayerStart>(
-			FVector(0.f, 250.f, PlatformHeight + 40.f),
-			FRotator(0.f, -90.f, 0.f),
-			SpawnParams);
-		if (DreamStart)
-		{
-			DreamStart->Tags.Add(TEXT("DreamStart"));
-		}
+		SpawnedDreamStart->Tags.Add(TEXT("DreamStart"));
 	}
 
 	UE_LOG(LogTriangle, Log, TEXT("Underground station assembled."));
 }
 
-UStaticMeshComponent* ATriangleStationBuilder::AddBox(const FVector& Location, const FVector& Scale, const FRotator& Rotation)
+void ATriangleStationBuilder::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (!GetWorld())
+	// The station is assembled at runtime. Destroy every piece explicitly so
+	// replacing the environment cannot leave orphaned lights, props, or starts.
+	for (int32 Index = SpawnedActors.Num() - 1; Index >= 0; --Index)
+	{
+		AActor* Actor = SpawnedActors[Index].Get();
+		if (IsValid(Actor) && !Actor->IsActorBeingDestroyed())
+		{
+			Actor->Destroy();
+		}
+	}
+	SpawnedActors.Reset();
+	SpawnedDreamStart = nullptr;
+
+	Super::EndPlay(EndPlayReason);
+}
+
+FVector ATriangleStationBuilder::GetPlatform12Location() const
+{
+	return GetActorTransform().TransformPosition(Platform12Location + FVector(0.f, 0.f, StationElevation));
+}
+
+AActor* ATriangleStationBuilder::SpawnTrackedActor(UClass* ActorClass, const FTransform& Transform)
+{
+	UWorld* World = GetWorld();
+	if (!World || !ActorClass)
 	{
 		return nullptr;
 	}
 
-	AStaticMeshActor* MeshActor = GetWorld()->SpawnActor<AStaticMeshActor>(
-		AStaticMeshActor::StaticClass(), FTransform(Rotation, Location));
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = this;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	const FTransform& BuilderTransform = GetActorTransform();
+	const FVector DesignLocation = Transform.GetLocation() + FVector(0.f, 0.f, StationElevation);
+	const FTransform WorldTransform(
+		BuilderTransform.GetRotation() * Transform.GetRotation(),
+		BuilderTransform.TransformPosition(DesignLocation),
+		BuilderTransform.GetScale3D() * Transform.GetScale3D());
+	AActor* Actor = World->SpawnActor<AActor>(ActorClass, WorldTransform, SpawnParameters);
+	if (Actor)
+	{
+		SpawnedActors.Add(Actor);
+	}
+	return Actor;
+}
+
+UStaticMesh* ATriangleStationBuilder::GetCubeMesh()
+{
+	static TObjectPtr<UStaticMesh> CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	return CubeMesh.Get();
+}
+
+UStaticMeshComponent* ATriangleStationBuilder::AddBox(const FVector& Location, const FVector& Scale, const FRotator& Rotation)
+{
+	AStaticMeshActor* MeshActor = Cast<AStaticMeshActor>(SpawnTrackedActor(
+		AStaticMeshActor::StaticClass(), FTransform(Rotation, Location)));
 	if (!MeshActor)
 	{
 		return nullptr;
 	}
 
 	UStaticMeshComponent* MeshComponent = MeshActor->GetStaticMeshComponent();
+	if (!MeshComponent)
+	{
+		return nullptr;
+	}
 	MeshComponent->SetMobility(EComponentMobility::Movable);
 	MeshComponent->SetStaticMesh(GetCubeMesh());
 	MeshComponent->SetRelativeScale3D(Scale);
@@ -143,17 +192,16 @@ void ATriangleStationBuilder::BuildFluorescentLights()
 		AddBox(Pos, FVector(4.f, 0.15f, 0.15f));
 
 		// The actual light.
-		if (UWorld* World = GetWorld())
+		if (APointLight* FL = Cast<APointLight>(SpawnTrackedActor(
+			APointLight::StaticClass(),
+			FTransform(FRotator::ZeroRotator, FVector(Pos.X, Pos.Y, Pos.Z - 15.f)))))
 		{
-			APointLight* FL = World->SpawnActor<APointLight>(
-				APointLight::StaticClass(),
-				FTransform(FRotator(0.f, 0.f, 0.f), FVector(Pos.X, Pos.Y, Pos.Z - 15.f)));
-			if (FL)
+			if (UPointLightComponent* LightComponent = Cast<UPointLightComponent>(FL->GetLightComponent()))
 			{
-				FL->GetLightComponent()->SetIntensity(2200.f);
-				FL->GetLightComponent()->SetLightColor(FLinearColor(0.85f, 0.88f, 0.92f));
-				FL->GetLightComponent()->SetAttenuationRadius(800.f);
-				FL->GetLightComponent()->SetCastShadows(false);
+				LightComponent->SetIntensity(2200.f);
+				LightComponent->SetLightColor(FLinearColor(0.85f, 0.88f, 0.92f));
+				LightComponent->SetAttenuationRadius(800.f);
+				LightComponent->SetCastShadows(false);
 			}
 		}
 	}
@@ -184,31 +232,35 @@ void ATriangleStationBuilder::BuildBenches()
 
 void ATriangleStationBuilder::BuildSafetyLights()
 {
-	// Amber safety strips along platform edges.
-	for (float x = -StationHalfX + 60.f; x < StationHalfX - 60.f; x += 50.f)
+	// Four broad amber pools are enough to keep the platform edge readable.
+	// The previous 26 tiny point lights looked richer in theory but were a poor
+	// trade on a GTX 1080's forward-lit SM5 path.
+	constexpr float LightPositions[] = { -350.f, 350.f };
+	for (const float X : LightPositions)
 	{
-		if (UWorld* World = GetWorld())
+		if (APointLight* LeftEdge = Cast<APointLight>(SpawnTrackedActor(
+			APointLight::StaticClass(),
+			FTransform(FRotator::ZeroRotator, FVector(X, -148.f, PlatformHeight + 8.f)))))
 		{
-			APointLight* LeftEdge = World->SpawnActor<APointLight>(
-				APointLight::StaticClass(),
-				FTransform(FRotator(0.f, 0.f, 0.f), FVector(x, -148.f, PlatformHeight + 5.f)));
-			if (LeftEdge)
+			if (UPointLightComponent* LightComponent = Cast<UPointLightComponent>(LeftEdge->GetLightComponent()))
 			{
-				LeftEdge->GetLightComponent()->SetIntensity(30.f);
-				LeftEdge->GetLightComponent()->SetLightColor(FLinearColor(0.6f, 0.35f, 0.05f));
-				LeftEdge->GetLightComponent()->SetAttenuationRadius(80.f);
-				LeftEdge->GetLightComponent()->SetCastShadows(false);
+				LightComponent->SetIntensity(55.f);
+				LightComponent->SetLightColor(FLinearColor(0.6f, 0.35f, 0.05f));
+				LightComponent->SetAttenuationRadius(180.f);
+				LightComponent->SetCastShadows(false);
 			}
+		}
 
-			APointLight* RightEdge = World->SpawnActor<APointLight>(
-				APointLight::StaticClass(),
-				FTransform(FRotator(0.f, 0.f, 0.f), FVector(x, 148.f, PlatformHeight + 5.f)));
-			if (RightEdge)
+		if (APointLight* RightEdge = Cast<APointLight>(SpawnTrackedActor(
+			APointLight::StaticClass(),
+			FTransform(FRotator::ZeroRotator, FVector(X, 148.f, PlatformHeight + 8.f)))))
+		{
+			if (UPointLightComponent* LightComponent = Cast<UPointLightComponent>(RightEdge->GetLightComponent()))
 			{
-				RightEdge->GetLightComponent()->SetIntensity(30.f);
-				RightEdge->GetLightComponent()->SetLightColor(FLinearColor(0.6f, 0.35f, 0.05f));
-				RightEdge->GetLightComponent()->SetAttenuationRadius(80.f);
-				RightEdge->GetLightComponent()->SetCastShadows(false);
+				LightComponent->SetIntensity(55.f);
+				LightComponent->SetLightColor(FLinearColor(0.6f, 0.35f, 0.05f));
+				LightComponent->SetAttenuationRadius(180.f);
+				LightComponent->SetCastShadows(false);
 			}
 		}
 	}
@@ -216,21 +268,32 @@ void ATriangleStationBuilder::BuildSafetyLights()
 
 void ATriangleStationBuilder::BuildPlatform12Marker()
 {
-	if (!GetWorld())
-	{
-		return;
-	}
-
 	// Platform 12 sign post.
 	AddBox(FVector(StationHalfX - 60.f, -140.f, PlatformHeight + 90.f),
 		FVector(0.08f, 0.08f, 1.8f));
 
-	// The sign itself.
+	// The sign itself: thin across X, wide across the platform, and tall in Z.
 	UStaticMeshComponent* Sign = AddBox(FVector(StationHalfX - 60.f, -140.f, PlatformHeight + 140.f),
-		FVector(1.2f, 0.6f, 0.06f));
+		FVector(0.06f, 1.2f, 0.6f));
 	if (Sign)
 	{
 		Sign->SetLinearColor(FLinearColor(0.9f, 0.85f, 0.15f));
+	}
+
+	// BasicShapes cannot show the number 12, so use Unreal's built-in text
+	// renderer. The actor faces back into the station rather than into the wall.
+	if (ATextRenderActor* SignText = Cast<ATextRenderActor>(SpawnTrackedActor(
+		ATextRenderActor::StaticClass(),
+		FTransform(FRotator(0.f, 180.f, 0.f), FVector(StationHalfX - 66.f, -140.f, PlatformHeight + 140.f)))))
+	{
+		if (UTextRenderComponent* TextComponent = SignText->GetTextRender())
+		{
+			TextComponent->SetText(FText::FromString(TEXT("12")));
+			TextComponent->SetHorizontalAlignment(EHTA_Center);
+			TextComponent->SetVerticalAlignment(EVRTA_TextCenter);
+			TextComponent->SetWorldSize(52.f);
+			TextComponent->SetTextRenderColor(FColor(230, 216, 38));
+		}
 	}
 
 	Platform12Location = FVector(StationHalfX - 60.f, -140.f, PlatformHeight + 100.f);
@@ -238,18 +301,9 @@ void ATriangleStationBuilder::BuildPlatform12Marker()
 
 void ATriangleStationBuilder::BuildTrain()
 {
-	if (!GetWorld())
-	{
-		return;
-	}
-
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	ATriangleTrain* Train = GetWorld()->SpawnActor<ATriangleTrain>(
+	ATriangleTrain* Train = Cast<ATriangleTrain>(SpawnTrackedActor(
 		ATriangleTrain::StaticClass(),
-		FVector(0.f, -50.f, 0.f),
-		FRotator(0.f, 0.f, 0.f),
-		Params);
+		FTransform(FRotator::ZeroRotator, FVector(0.f, 60.f, 0.f))));
 	if (Train)
 	{
 		Train->Tags.Add(TEXT("WrongTrain"));
@@ -258,21 +312,11 @@ void ATriangleStationBuilder::BuildTrain()
 
 void ATriangleStationBuilder::BuildCornerPoint()
 {
-	if (!GetWorld())
-	{
-		return;
-	}
-
 	// Upper corner of the far platform — where the Triangle first appears.
-	FVector CornerLoc = FVector(-StationHalfX * 0.85f, 360.f, PlatformHeight + 10.f);
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	ATriangleTrianglePoint* Point = GetWorld()->SpawnActor<ATriangleTrianglePoint>(
+	const FVector CornerLoc = FVector(-StationHalfX * 0.85f, 360.f, PlatformHeight + 10.f);
+	if (ATriangleTrianglePoint* Point = Cast<ATriangleTrianglePoint>(SpawnTrackedActor(
 		ATriangleTrianglePoint::StaticClass(),
-		CornerLoc,
-		FRotator::ZeroRotator,
-		Params);
-	if (Point)
+		FTransform(FRotator::ZeroRotator, CornerLoc))))
 	{
 		Point->ManifestId = FName(TEXT("StationCorner"));
 	}
@@ -280,37 +324,38 @@ void ATriangleStationBuilder::BuildCornerPoint()
 
 void ATriangleStationBuilder::BuildLighting()
 {
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
 	// Cold ambient wash from above.
-	ASkyLight* Sky = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FTransform::Identity);
-	if (Sky)
+	if (ASkyLight* Sky = Cast<ASkyLight>(SpawnTrackedActor(ASkyLight::StaticClass(), FTransform::Identity)))
 	{
-		Sky->GetLightComponent()->SetIntensity(0.25f);
-		Sky->GetLightComponent()->SetLightColor(FLinearColor(0.25f, 0.28f, 0.32f));
-		Sky->GetLightComponent()->SetCastShadows(false);
+		if (ULightComponent* LightComponent = Sky->GetLightComponent())
+		{
+			LightComponent->SetIntensity(0.25f);
+			LightComponent->SetLightColor(FLinearColor(0.25f, 0.28f, 0.32f));
+			LightComponent->SetCastShadows(false);
+		}
 	}
 
 	// Near-total darkness over the tracks.
-	if (UPointLight* TrackFill = World->SpawnActor<APointLight>(
-		APointLight::StaticClass(), FVector(0.f, 0.f, 100.f), FRotator::ZeroRotator))
+	if (APointLight* TrackFill = Cast<APointLight>(SpawnTrackedActor(
+		APointLight::StaticClass(), FTransform(FRotator::ZeroRotator, FVector(0.f, 0.f, 100.f)))))
 	{
-		TrackFill->GetLightComponent()->SetIntensity(20.f);
-		TrackFill->GetLightComponent()->SetLightColor(FLinearColor(0.05f, 0.05f, 0.07f));
-		TrackFill->GetLightComponent()->SetAttenuationRadius(600.f);
-		TrackFill->GetLightComponent()->SetCastShadows(false);
+		if (UPointLightComponent* LightComponent = Cast<UPointLightComponent>(TrackFill->GetLightComponent()))
+		{
+			LightComponent->SetIntensity(20.f);
+			LightComponent->SetLightColor(FLinearColor(0.05f, 0.05f, 0.07f));
+			LightComponent->SetAttenuationRadius(600.f);
+			LightComponent->SetCastShadows(false);
+		}
 	}
 
 	// Fog — thicker than the bedroom; underground, no breeze.
-	AExponentialHeightFog* Fog = World->SpawnActor<AExponentialHeightFog>(
-		AExponentialHeightFog::StaticClass(), FTransform::Identity);
-	if (Fog)
+	if (AExponentialHeightFog* Fog = Cast<AExponentialHeightFog>(SpawnTrackedActor(
+		AExponentialHeightFog::StaticClass(), FTransform::Identity)))
 	{
-		Fog->GetComponent()->SetFogDensity(0.008f);
-		Fog->GetComponent()->SetFogInscatteringColor(FLinearColor(0.03f, 0.035f, 0.045f));
+		if (UExponentialHeightFogComponent* FogComponent = Cast<UExponentialHeightFogComponent>(Fog->GetComponent()))
+		{
+			FogComponent->SetFogDensity(0.008f);
+			FogComponent->SetFogInscatteringColor(FLinearColor(0.03f, 0.035f, 0.045f));
+		}
 	}
 }

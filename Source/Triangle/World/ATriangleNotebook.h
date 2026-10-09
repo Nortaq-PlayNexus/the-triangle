@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "ATriangleNotebook.generated.h"
 
+class APawn;
 class UStaticMeshComponent;
 class UTriangleInteractableComponent;
 
@@ -22,6 +23,21 @@ class ATriangleNotebook : public AActor
 public:
 	ATriangleNotebook();
 
+	/** Number of reads recorded by this notebook, suitable for save state. */
+	UFUNCTION(BlueprintPure, Category = "Triangle|Notebook")
+	int32 GetInteractionCount() const { return InteractionCount; }
+
+	/** Restores the read count when loading a save. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Notebook")
+	void SetInteractionCount(int32 NewInteractionCount);
+
+	/** Starts a fresh notebook for a new dream. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Notebook")
+	void ResetInteractionCount();
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, SaveGame, Category = "Triangle|Notebook")
+	int32 InteractionCount = 0;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -35,6 +51,4 @@ private:
 	TObjectPtr<UStaticMeshComponent> CoverMesh;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UTriangleInteractableComponent> Interactable;
-
-	int32 InteractionCount = 0;
 };

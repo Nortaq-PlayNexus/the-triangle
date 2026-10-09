@@ -1,12 +1,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/ETriangleDreamEnvironment.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "UTriangleSaveSubsystem.generated.h"
 
 class UTriangleSaveGame;
 
 DECLARE_DELEGATE_OneParam(FTriangleSaveAsyncResult, bool /*bSuccess*/);
+
+UENUM(BlueprintType)
+enum class ETriangleSaveApplyResult : uint8
+{
+	Applied,
+	Queued,
+	Failed
+};
 
 /**
  * Owns save/load for the whole game.
@@ -26,22 +35,54 @@ class UTriangleSaveSubsystem : public UGameInstanceSubsystem
 public:
 	static const FString SaveSlotName;
 
-	/** Creates a fresh save for a new dream. */
+	/** Clears the default slot so a new dream starts without a blank save file. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Save")
 	void ResetSave();
 
-	/** Serializes the current dream state into the default slot. Returns false if serialization failed. */
+	/** Explicitly deletes the default slot. Already-clear slots count as success. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Save")
+	bool DeleteSaveData();
+
+	/** Serializes the current dream state and fires OnSaveCompleted with the result. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Save")
 	bool SaveGameNow(UTriangleSaveGame* InSnapshot);
 
 	/** Loads the saved dream from disk. Returns the snapshot, or nullptr if none exists. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Save")
 	UTriangleSaveGame* LoadGameNow();
 
+	/**
+	 * Applies player-owned snapshot state without replaying progression. A
+	 * different procedural environment is queued until its fade/swap completes.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Save")
+	ETriangleSaveApplyResult ApplySnapshot(UTriangleSaveGame* Snapshot);
+
 	/** Whether a saved dream exists. */
+	UFUNCTION(BlueprintPure, Category = "Triangle|Save")
 	bool HasSaveData() const;
 
-	/** Queued callback for async callers; fired with bSuccess after SaveGameNow. */
+	/** Completion callback for native async/queued callers; fired on every save attempt. */
 	FTriangleSaveAsyncResult OnSaveCompleted;
 
+	virtual void Deinitialize() override;
+
 private:
+	UFUNCTION()
+	void HandleEnvironmentReady(ETriangleDreamEnvironment Environment);
+
+	UFUNCTION()
+	void HandleEnvironmentTransitionFailed(ETriangleDreamEnvironment Environment);
+
+	/** Applies the player/world-owned portion after the target environment exists. */
+	bool ApplyPlayerState(UTriangleSaveGame* Snapshot);
+
 	/** Builds a fresh snapshot from the world if the caller provided none. */
 	UTriangleSaveGame* BuildSnapshot();
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTriangleSaveGame> PendingSnapshot;
+
+	UPROPERTY(Transient)
+	ETriangleDreamEnvironment PendingEnvironment = ETriangleDreamEnvironment::ChildhoodBedroom;
 };

@@ -1,0 +1,25 @@
+{
+  "snapshot_date": "2026-09-24",
+  "developers": [
+    {"id":"d_lsddev","name":"lsddev","role":"creator","source_ids":["E008"]},
+    {"id":"d_flowerstudio","name":"flower studio / Ashley Black","role":"creator","source_ids":["E009"]},
+    {"id":"d_aerist","name":"aerist","role":"creator","source_ids":["E010"]},
+    {"id":"d_jimmytwist","name":"JimmyTwist","role":"creator","source_ids":["E011"]},
+    {"id":"d_antonov","name":"Antonov Vladyslav","role":"creator","source_ids":["E012"]},
+    {"id":"d_jonbieber","name":"Jon Bieber","role":"creator","source_ids":["E013"]},
+    {"id":"d_gregoryaveryweir","name":"Gregory Avery-Weir","role":"original creator","source_ids":["E014"]},
+    {"id":"d_futureproof","name":"Future Proof Games","role":"remaster/publisher","source_ids":["E014"]},
+    {"id":"d_montraluz","name":"Montraluz","role":"developer","source_ids":["E001","E002","E003"]},
+    {"id":"d_tlon","name":"Tlön Industries","role":"publisher","source_ids":["E001"]},
+    {"id":"d_ankoku","name":"Ankoku","role":"developer/publisher","source_ids":["E005"]},
+    {"id":"d_maxwellplay","name":"Maxwell Play","role":"developer/publisher","source_ids":["E006"]},
+    {"id":"d_infinitap","name":"Infinitap Games","role":"developer/publisher","source_ids":["E007"]},
+    {"id":"d_osamusato","name":"Osamu Sato","role":"creator associated with LSD: Dream Emulator","source_ids":["E022","E023"]},
+    {"id":"d_scribdev","name":"Scrib-dev","role":"creator","source_ids":["E042"]},
+    {"id":"d_omocat","name":"OMOCAT","role":"creator","source_ids":["E043","E044"]},
+    {"id":"d_radkevych","name":"Yurii Radkevych","role":"founder/creative director","source_ids":["E045"]},
+    {"id":"d_eldamar","name":"Eldamar Studio","role":"studio","source_ids":["E045"]},
+    {"id":"d_amata","name":"Amata","role":"studio/developer associated with Happy Game","source_ids":["E048"]},
+    {"id":"d_triangle","name":"THE TRIANGLE project","role":"creator/project","source_ids":["L001","L020"]}
+  ]
+}

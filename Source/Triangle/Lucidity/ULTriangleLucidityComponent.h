@@ -72,6 +72,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Triangle|Lucidity")
 	bool CanManipulateDream() const { return GetLucidityLevel() >= ETriangleLucidityLevel::High; }
 
+	/**
+	 * Restores a saved value without replaying level or maximum-lucidity milestones.
+	 * The value-only delegate is still broadcast so meters can refresh immediately.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Triangle|Lucidity")
 	void RestoreFromSave(float SavedLucidity);
 

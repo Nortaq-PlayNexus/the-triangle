@@ -80,6 +80,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Triangle|Recognition")
 	float GetRecognition() const { return Recognition; }
 
+	/** Returns a defensive copy of the patterns the player has already recognised. */
+	UFUNCTION(BlueprintPure, Category = "Triangle|Recognition")
+	TArray<FName> GetRecognizedPatternIds() const { return RecognisedIds; }
+
 	UFUNCTION(BlueprintPure, Category = "Triangle|Recognition")
 	ETriangleRecognitionLevel GetRecognitionLevel() const;
 
@@ -99,8 +103,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Triangle|Recognition")
 	bool HasRecognised(FName ManifestId) const { return RecognisedIds.Contains(ManifestId); }
 
+	/** Legacy scalar-only restore; retains the current pattern catalogue. */
 	UFUNCTION(BlueprintCallable, Category = "Triangle|Recognition")
 	void RestoreFromSave(float SavedRecognition);
+
+	/**
+	 * Restores the scalar and pattern IDs without replaying recognition milestones
+	 * or the pre-visual sense. The value-only delegate refreshes UI immediately.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Recognition")
+	void RestoreFromSaveWithCatalogue(float SavedRecognition, const TArray<FName>& SavedRecognizedPatternIds);
 
 private:
 	static ETriangleRecognitionLevel LevelFor(float Value);

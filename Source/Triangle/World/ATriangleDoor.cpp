@@ -1,24 +1,26 @@
 #include "World/ATriangleDoor.h"
 
 #include "Triangle.h"
-#include "Characters/ATrianglePlayerController.h"
 #include "Core/FTriangleGameplayStatics.h"
 #include "Interaction/UTriangleInteractableComponent.h"
 #include "Lucidity/ULTriangleLucidityComponent.h"
 #include "UI/ATriangleHUD.h"
 
+#include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
 ATriangleDoor::ATriangleDoor()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	RootComponent->SetMobility(EComponentMobility::Movable);
 
 	DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
+	DoorMesh->SetMobility(EComponentMobility::Movable);
 	DoorMesh->SetupAttachment(RootComponent);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -43,13 +45,27 @@ void ATriangleDoor::BeginPlay()
 {
 	Super::BeginPlay();
 	ClosedRotation = GetActorRotation();
-	Interactable->OnInteracted.AddDynamic(this, &ATriangleDoor::OnInteracted);
+	OpenRotation = ClosedRotation + FRotator(0.f, -95.f, 0.f);
+	SetActorTickEnabled(false);
+
+	if (Interactable)
+	{
+		Interactable->OnInteracted.AddDynamic(this, &ATriangleDoor::OnInteracted);
+	}
 }
 
-void ATriangleDoor::OnInteracted(APawn* Interactor)
+void ATriangleDoor::OnInteracted(APawn*)
 {
+	if (bSwinging)
+	{
+		return;
+	}
+
 	if (bIsOpen)
 	{
+		// Keep the component enabled after opening. A second deliberate press
+		// is the seam where the environment flow requests the station cut.
+		RequestTransition();
 		return;
 	}
 
@@ -60,30 +76,37 @@ void ATriangleDoor::OnInteracted(APawn* Interactor)
 	{
 		Open(false);
 		UE_LOG(LogTriangleDream, Log, TEXT("The door relented and opened into darkness."));
-		if (ATrianglePlayerController* PC = FTriangleGameplayStatics::GetTrianglePlayerController(GetWorld()))
+		if (ATriangleHUD* HUD = FTriangleGameplayStatics::GetTriangleHUD(GetWorld()))
 		{
-			PC->GetTriangleHUD()->PushSubtitle(FText::FromString(TEXT("The door opens into darkness.")), 2.5f);
+			HUD->PushSubtitle(FText::FromString(TEXT("The door opens into darkness.")), 2.5f);
 		}
 	}
-	else
+	else if (ATriangleHUD* HUD = FTriangleGameplayStatics::GetTriangleHUD(GetWorld()))
 	{
-		if (ATrianglePlayerController* PC = FTriangleGameplayStatics::GetTrianglePlayerController(GetWorld()))
-		{
-			PC->GetTriangleHUD()->PushSubtitle(FText::FromString(TEXT("It won't move. The dream is not done with you.")), 3.f);
-		}
+		HUD->PushSubtitle(FText::FromString(TEXT("It won't move. The dream is not done with you.")), 3.f);
 	}
 }
 
 void ATriangleDoor::Open(bool bInstant)
 {
-	bIsOpen = true;
-	Interactable->bEnabled = false;
-	Interactable->NotifyFocusEnd();
+	if (bIsOpen)
+	{
+		if (bInstant)
+		{
+			SetActorRotation(OpenRotation);
+			bSwinging = false;
+			SetActorTickEnabled(false);
+		}
+		return;
+	}
 
-	if (bInstant)
+	bIsOpen = true;
+	const float ConfiguredDuration = FMath::IsFinite(SwingDuration) ? SwingDuration : 0.f;
+	if (bInstant || ConfiguredDuration <= KINDA_SMALL_NUMBER)
 	{
 		SetActorRotation(OpenRotation);
 		bSwinging = false;
+		SetActorTickEnabled(false);
 		return;
 	}
 
@@ -92,13 +115,50 @@ void ATriangleDoor::Open(bool bInstant)
 	SetActorTickEnabled(true);
 }
 
+void ATriangleDoor::Close(const bool bInstant)
+{
+	(void)bInstant;
+	bIsOpen = false;
+	bSwinging = false;
+	SetActorRotation(ClosedRotation);
+	SetActorTickEnabled(false);
+}
+
+void ATriangleDoor::RequestTransition()
+{
+	if (!bIsOpen || bSwinging)
+	{
+		return;
+	}
+
+	if (ATriangleHUD* HUD = FTriangleGameplayStatics::GetTriangleHUD(GetWorld()))
+	{
+		HUD->PushSubtitle(FText::FromString(TEXT("The darkness waits beyond.")), 2.5f);
+	}
+	const FVector BeyondLocation = GetBeyondLocation();
+	UE_LOG(LogTriangleDream, Log, TEXT("Door transition requested; beyond location is %s."), *BeyondLocation.ToCompactString());
+	OnTransitionRequested.Broadcast(this);
+}
+
+FVector ATriangleDoor::GetBeyondLocation() const
+{
+	// Use the closed orientation as the stable reference. The door rotates
+	// around its own origin, so this point remains a useful destination after
+	// the swing completes.
+	const FRotator ReferenceRotation = HasActorBegunPlay() ? ClosedRotation : GetActorRotation();
+	return GetActorLocation() + ReferenceRotation.RotateVector(BeyondOffset);
+}
+
 void ATriangleDoor::AdvanceSwing(float DeltaTime)
 {
 	if (!bSwinging)
 	{
+		SetActorTickEnabled(false);
 		return;
 	}
-	SwingAlpha = FMath::Min(1.f, SwingAlpha + DeltaTime / SwingDuration);
+
+	const float SafeDuration = FMath::Max(FMath::IsFinite(SwingDuration) ? SwingDuration : 0.f, KINDA_SMALL_NUMBER);
+	SwingAlpha = FMath::Min(1.f, SwingAlpha + DeltaTime / SafeDuration);
 	SetActorRotation(FMath::Lerp(ClosedRotation, OpenRotation, SwingAlpha));
 
 	if (SwingAlpha >= 1.f)

@@ -42,7 +42,9 @@ UStaticMesh* ATriangleAnomalyActor::LoadMesh(const TCHAR* Path)
 void ATriangleAnomalyActor::Configure(ETriangleAnomalyKind InKind, float InDuration, const FVector& SpawnLocation, const FRotator& SpawnRotation)
 {
 	ActiveKind = InKind;
-	Lifespan = FMath::Max(1.5f, InDuration);
+	// Keep the actor alive through its full fade-in/out envelope. The Director
+	// uses the same effective minimum when scheduling recognition resolution.
+	Lifespan = FMath::IsFinite(InDuration) ? FMath::Max(2.5f, InDuration) : 5.f;
 	AgeSeconds = 0.f;
 	bActive = true;
 

@@ -26,8 +26,10 @@ ATriangleAnomalyActor* UTriangleAnomalySubsystem::SpawnAnomaly(ETriangleAnomalyK
 
 	PruneGhosts();
 
-	// Enforce the concurrent budget before spawning.
-	while (ActiveAnomalies.Num() >= MaxConcurrent)
+	// Enforce the concurrent budget before spawning. A malformed zero budget
+	// must never turn the eviction loop into an out-of-bounds access.
+	const int32 Budget = FMath::Max(1, MaxConcurrent);
+	while (ActiveAnomalies.Num() >= Budget)
 	{
 		ATriangleAnomalyActor* Oldest = ActiveAnomalies[0];
 		ActiveAnomalies.RemoveAt(0);
@@ -68,7 +70,15 @@ void UTriangleAnomalySubsystem::PruneGhosts()
 
 int32 UTriangleAnomalySubsystem::GetActiveAnomalyCount() const
 {
-	return ActiveAnomalies.Num();
+	int32 ValidCount = 0;
+	for (const TObjectPtr<ATriangleAnomalyActor>& Anomaly : ActiveAnomalies)
+	{
+		if (IsValid(Anomaly))
+		{
+			++ValidCount;
+		}
+	}
+	return ValidCount;
 }
 
 void UTriangleAnomalySubsystem::DespawnAll()
@@ -96,20 +106,41 @@ FVector UTriangleAnomalySubsystem::ChooseRenderPoint(const UWorld* World, ETrian
 			Facing = Camera->GetForwardVector();
 		}
 	}
-	const FVector FacingFlat = FVector(Facing.X, Facing.Y, 0.f).GetSafeNormal();
+	FVector FacingFlat = FVector(Facing.X, Facing.Y, 0.f).GetSafeNormal();
+	if (FacingFlat.IsNearlyZero())
+	{
+		FacingFlat = FVector::ForwardVector;
+	}
 
 	if (Kind == ETriangleAnomalyKind::DistantBlackPoint)
 	{
 		// Far, faint, unapproachable: a point of the dream hovering past reach.
 		const float Distance = FMath::FRandRange(1800.f, 3200.f);
 		const FVector Dir = (FacingFlat * FMath::FRandRange(0.55f, 1.f) + FVector(FMath::FRandRange(-0.4f, 0.4f), FMath::FRandRange(-0.4f, 0.4f), 0.f)).GetSafeNormal();
-		return Around + Dir * Distance + FVector(0.f, 0.f, FMath::FRandRange(20.f, 180.f));
+		return Around + Dir * Distance + FVector(0.f, 0.f, FMath::FRandRange(-100.f, 180.f));
 	}
 
-	// Wall-ish sampling: a short step sideways from the player.
+	// Wall-ish sampling: a short step from the player. Keep the cut in the same
+	// world-height band as the active environment (the bedroom itself is built
+	// thousands of centimetres above the station).
 	const float Fraction = FMath::FRandRange(0.4f, 0.95f);
 	const float Side = FMath::FRandRange(-1.f, 1.f);
-	const FVector Dir = (FacingFlat * (Fraction * FMath::Sign(FMath::FRandRange(-1.f, 1.f))) + FVector(-FacingFlat.Y, FacingFlat.X, 0.f) * Side).GetSafeNormal();
+	const float DirectionSign = FMath::RandRange(-1.f, 1.f) < 0.f ? -1.f : 1.f;
+	const FVector Dir = (FacingFlat * (Fraction * DirectionSign) + FVector(-FacingFlat.Y, FacingFlat.X, 0.f) * Side).GetSafeNormal();
 	const FVector Point = Around + Dir * FMath::FRandRange(70.f, 230.f);
-	return FVector(Point.X, Point.Y, FMath::Clamp(Around.Z + FMath::FRandRange(-40.f, 160.f), 60.f, 260.f));
+	const FVector Candidate = FVector(Point.X, Point.Y, Around.Z + FMath::FRandRange(-40.f, 140.f));
+	FHitResult SurfaceHit;
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(TriangleAnomalySurface), false);
+	if (const APawn* Pawn = World->GetFirstPlayerController() ? World->GetFirstPlayerController()->GetPawn() : nullptr)
+	{
+		QueryParams.AddIgnoredActor(Pawn);
+	}
+	const FVector TraceStart = Around + FVector(0.f, 0.f, 80.f);
+	const FVector TraceEnd = Candidate + FVector(0.f, 0.f, 80.f);
+	if (World->LineTraceSingleByChannel(SurfaceHit, TraceStart, TraceEnd, ECC_Visibility, QueryParams)
+		&& SurfaceHit.bBlockingHit)
+	{
+		return SurfaceHit.ImpactPoint + SurfaceHit.ImpactNormal * 4.f;
+	}
+	return Candidate;
 }

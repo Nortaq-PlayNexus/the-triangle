@@ -7,8 +7,8 @@
 #include "ATriangleDreamDirector.generated.h"
 
 class ATriangleCharacter;
-class ATriangleRoomBuilder;
 class ATriangleTrianglePoint;
+class ATriangleAnomalyActor;
 class ULTriangleLucidityComponent;
 class ULTriangleRecognitionComponent;
 class UTriangleAnomalySubsystem;
@@ -27,12 +27,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTriangleDirectorManifest, FName, Ma
  * Recognition-led loop that lets the player sense it before they see it.
  *
  * The Director owns a 0..1 presence ramp: presence rises while a
- * manifestation is active (or while a Master-sensed player knows it is here)
- * and decays when nothing is present. The hum follows presence; anomalies
- * (gaps, corners pushed apart, distant points) are its visible bodies; the
- * recurring motifs (twelve, the train) arrive on their own schedule; and a
- * completed false wake asks the Director to withdraw everything and start
- * the presence over.
+ * manifestation is active and decays when nothing is present. The hum follows
+ * presence; anomalies (gaps, corners pushed apart, distant points) are its
+ * visible bodies; the recurring motifs (twelve, the train) arrive on their own
+ * schedule; and a completed false wake asks the Director to withdraw everything
+ * and start the presence over.
  */
 UCLASS()
 class ATriangleDreamDirector : public AActor
@@ -67,6 +66,14 @@ public:
 	/** Withdraws all current presence and manifestations (wake / reset). */
 	UFUNCTION(BlueprintCallable, Category = "Triangle|Dream")
 	void WithdrawPresence();
+
+	/** Clears environment-bound references after a room/station transition. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Dream")
+	void HandleEnvironmentChanged();
+
+	/** Invalidates active manifestation/audio state before applying a loaded snapshot. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Dream")
+	void ResetForSaveLoad();
 
 	// --- Events visible/extensible in Blueprint -----------------------------
 	UPROPERTY(BlueprintAssignable, Category = "Triangle|Dream|Events")
@@ -110,10 +117,16 @@ protected:
 	void ExecuteManifestation(bool bSenseOnly = false);
 
 	/** Rounds out a seen manifestation with recognition gain + events. */
-	void ResolveManifestation(const UTriangleManifestationDefinition* Def, float Duration);
+	void ResolveManifestation(const UTriangleManifestationDefinition* Def, float Duration, int32 ManifestationSerial);
+
+	/** True when the current manifestation was actually in the player's view. */
+	bool WasManifestationWitnessed(const UTriangleManifestationDefinition* Def) const;
 
 	/** Master recognition can guess at the presence before any visible form. */
 	void TryMasterSense(float DeltaSeconds);
+
+	/** Applies a short motif/reveal hum independently of the presence ramp. */
+	void RequestTransientHum(float Target, float Duration);
 
 	/** Maps a recognition milestone to subtitle/hum beats. */
 	void OnRecognitionMilestone(ETriangleRecognitionLevel NewLevel);
@@ -140,9 +153,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Dream", meta = (ClampMin = "0.5", ClampMax = "30"))
 	float ManifestInterval = 5.5f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Dream", meta = (ClampMin = "0.5", ClampMax = "30"))
-	float ManifestDuration = 6.f;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Dream", meta = (ClampMin = "0", ClampMax = "20"))
 	float WatchLucidityPerSecond = 1.5f;
 
@@ -159,14 +169,11 @@ protected:
 	float MasterSenseInterval = 9.f;
 
 	/** The catalogue of bodies The Triangle can take. Populated in the constructor. */
-	UPROPERTY(VisibleAnywhere, Category = "Triangle|Dream|Manifestations")
+	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Dream|Manifestations")
 	TArray<TObjectPtr<UTriangleManifestationDefinition>> ManifestationPool;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<ATriangleTrianglePoint> CornerPoint;
-
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<ATriangleRoomBuilder> RoomBuilder;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<ATriangleCharacter> PlayerActor;
@@ -184,13 +191,26 @@ private:
 	float TrianglePresence = 0.f;
 	float LastAnnouncedPresence = 0.f;
 	float CurrentHumTarget = 0.f;
+	float TransientHumTarget = 0.f;
+	float TransientHumRemaining = 0.f;
+	int32 ActiveManifestationSerial = 0;
 	bool bHumActive = false;
 	bool bPresenceActive = false;
 	bool bMaxReachedHandled = false;
 	bool bBoundEvents = false;
 	bool bManifestationActive = false;
+	bool bHumEnabledForCurrentManifestation = false;
+	bool bMaximumPointReapplied = false;
 	bool bSchedulingStarted = false;
 	FVector CornerLocation = FVector::ZeroVector;
+
+	TMap<FName, float> ManifestCooldowns;
+	FTimerHandle ManifestationTimerHandle;
+	FTimerHandle TrainDoorResetTimerHandle;
+	TWeakObjectPtr<ATriangleAnomalyActor> ActiveAnomaly;
+	UPROPERTY(Transient)
+	TObjectPtr<UTriangleManifestationDefinition> ActiveManifestationDefinition;
+	bool bCurrentAnomalyWasWitnessed = false;
 
 	TObjectPtr<UTriangleAnomalySubsystem> AnomalySys;
 	TObjectPtr<UTriangleAudioSubsystem> AudioSys;

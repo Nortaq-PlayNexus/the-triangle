@@ -1,0 +1,14 @@
+{
+  "snapshot_date": "2026-09-24",
+  "adoption_events": [
+    {"id":"ae_dreamcore_self","game_id":"gdreamcore","term":"Dreamcore","source_id":"E001","event_type":"self_description","adoption_eligible":false,"notes":"Existing title and aesthetic use; not a use of this proposal's provenance definition."},
+    {"id":"ae_rabbit_self","game_id":"g_rabbit_hole","term":"dreamcore aesthetic","source_id":"E005","event_type":"self_description","adoption_eligible":false,"notes":"Aesthetic use, not proposed category adoption."},
+    {"id":"ae_explore_self","game_id":"gexplore","term":"Dreamcore aesthetic","source_id":"E006","event_type":"self_description","adoption_eligible":false,"notes":"Style reference, not proposed category adoption."},
+    {"id":"ae_clockwork_source","game_id":"gclockwork","term":"personal dreams","source_id":"E042","event_type":"self_description","adoption_eligible":false,"notes":"Provenance statement, not adoption of the proposed label."},
+    {"id":"ae_omori_source","game_id":"gomori","term":"dream/lucid dream/nightmare imagery","source_id":"E043","event_type":"self_description","adoption_eligible":false,"notes":"Mixed personal provenance; not adoption of the proposed label."},
+    {"id":"ae_lucid_source","game_id":"glucidfalls","term":"core idea from dreams","source_id":"E045","event_type":"self_description","adoption_eligible":false,"notes":"Concept-level provenance, not proposed-label adoption."},
+    {"id":"ae_triangle_provisional","game_id":"gtriangle","term":"proposed Dreamcore Horror","source_id":"L020","event_type":"self_description","adoption_eligible":false,"notes":"Internal/user-reported working terminology; not public launch or independent adoption."}
+  ],
+  "verified_external_adoption_count": 0,
+  "note":"No independent voluntary adoption of the proposed definition was verified in the initial research window. This is a research snapshot, not a universal negative."
+}

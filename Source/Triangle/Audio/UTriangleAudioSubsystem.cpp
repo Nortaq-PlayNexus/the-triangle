@@ -23,6 +23,8 @@ void UTriangleAudioSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	StateVolume.Add(StateNearSilence, 0.f);
 
 	CurrentVolume = StateVolume[StateCalm];
+	CurrentState = StateCalm;
+	bSilenced = false;
 }
 
 void UTriangleAudioSubsystem::Deinitialize()
@@ -32,6 +34,12 @@ void UTriangleAudioSubsystem::Deinitialize()
 		MusicComponent->Stop();
 		MusicComponent = nullptr;
 	}
+	if (IsValid(HumSource))
+	{
+		HumSource->SetPresence(0.f, 0.05f);
+		HumSource->Destroy();
+	}
+	HumSource = nullptr;
 	MusicHost = nullptr;
 	Super::Deinitialize();
 }
@@ -76,6 +84,11 @@ void UTriangleAudioSubsystem::SetMasterMusic(USoundBase* Music)
 
 	if (!Music)
 	{
+		BoundMusic = nullptr;
+		if (MusicComponent)
+		{
+			MusicComponent->Stop();
+		}
 		if (!bWarnedNoMusic)
 		{
 			UE_LOG(LogTriangle, Warning, TEXT("SetMasterMusic called with no sound asset - the dream runs silent until audio content lands."));
@@ -91,12 +104,21 @@ void UTriangleAudioSubsystem::SetMasterMusic(USoundBase* Music)
 	}
 
 	MusicComponent->SetSound(Music);
-	MusicComponent->FadeIn(2.f, 1.f);
+	const float StateTarget = StateVolume.Contains(CurrentState) ? StateVolume[CurrentState] : 0.f;
+	const float TargetVolume = (bSilenced ? StateVolume[StateNearSilence] : StateTarget) * MusicBaseVolume;
+	CurrentVolume = TargetVolume;
+	MusicComponent->FadeIn(2.f, TargetVolume);
 	UE_LOG(LogTriangle, Log, TEXT("Master dream bed bound to '%s'."), *Music->GetName());
 }
 
 void UTriangleAudioSubsystem::SetMusicState(FName State, float FadeTimeSeconds)
 {
+	if (!StateVolume.Contains(State))
+	{
+		UE_LOG(LogTriangle, Warning, TEXT("Ignoring unknown dream-bed state '%s'."), *State.ToString());
+		return;
+	}
+	CurrentState = State;
 	if (!BoundMusic)
 	{
 		return;
@@ -111,7 +133,7 @@ void UTriangleAudioSubsystem::SetNearSilence(bool bSilence, float FadeTimeSecond
 	{
 		return;
 	}
-	ApplyStateVolume(bSilence ? StateNearSilence : StateCalm, FadeTimeSeconds);
+	ApplyStateVolume(bSilence ? StateNearSilence : CurrentState, FadeTimeSeconds);
 }
 
 void UTriangleAudioSubsystem::ApplyStateVolume(FName State, float FadeTime)
@@ -129,7 +151,8 @@ void UTriangleAudioSubsystem::FadeTo(float TargetVolume, float FadeTime)
 	}
 
 	CurrentVolume = TargetVolume * MusicBaseVolume;
-	MusicComponent->AdjustVolume(FMath::Max(0.05f, FadeTime), CurrentVolume, EAudioFaderCurve::Linear);
+	const float SafeFadeTime = FMath::IsFinite(FadeTime) ? FMath::Max(0.05f, FadeTime) : 1.f;
+	MusicComponent->AdjustVolume(SafeFadeTime, CurrentVolume, EAudioFaderCurve::Linear);
 }
 
 void UTriangleAudioSubsystem::PlayOneShot(USoundBase* Sound, const FVector& Location, float Volume)
@@ -162,7 +185,7 @@ void UTriangleAudioSubsystem::SetHumPresence(float Target01, float FadeTimeSecon
 {
 	// Hysteresis: tiny presences are not worth waking the hum for, matching the
 	// design beat where the hum is sometimes simply not there.
-	if (Target01 < 0.04f && IsHumActive())
+	if (Target01 < 0.04f)
 	{
 		Target01 = 0.f;
 	}

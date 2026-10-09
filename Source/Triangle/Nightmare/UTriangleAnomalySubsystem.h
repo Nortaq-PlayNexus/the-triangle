@@ -33,7 +33,7 @@ public:
 	void DespawnAll();
 
 	/** Maximum simultaneous intrusions; the oldest is dropped beyond this. */
-	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Anomaly")
+	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Anomaly", meta = (ClampMin = "1", ClampMax = "8"))
 	int32 MaxConcurrent = 2;
 
 private:

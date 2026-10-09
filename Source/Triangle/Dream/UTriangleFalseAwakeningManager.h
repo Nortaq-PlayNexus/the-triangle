@@ -26,6 +26,7 @@ class UTriangleFalseAwakeningManager : public UWorldSubsystem
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 	/** Attempt a wake. Returns true if the dream let the player down (false = refuse). */
 	UFUNCTION(BlueprintCallable, Category = "Triangle|Wake")
@@ -34,6 +35,10 @@ public:
 	/** The current wake layer (0 within a dream: never woken). */
 	UFUNCTION(BlueprintPure, Category = "Triangle|Wake")
 	int32 GetCurrentLayer() const { return LayerIndex; }
+
+	/** Restores a saved wake depth without replaying any wake events. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Wake")
+	void RestoreState(int32 SavedLayer);
 
 	/** Lines of difference the wake produces, one per completed wake: first wakes are almost identical. */
 	UPROPERTY(EditDefaultsOnly, Category = "Triangle|Wake")
@@ -48,6 +53,8 @@ public:
 private:
 	int32 LayerIndex = 0;
 	int32 CompletionCount = 0;
+	float NextWakeAllowedTime = 0.f;
+	FTimerHandle PendingDifferenceTimerHandle;
 
 	static const TCHAR* DescriptorFor(int32 Layer);
 };

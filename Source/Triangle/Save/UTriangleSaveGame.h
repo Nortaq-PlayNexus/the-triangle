@@ -5,9 +5,9 @@
 #include "UTriangleSaveGame.generated.h"
 
 /**
- * Serializable dream-state snapshot for a save slot.
- * Grows with the systems that need persistence (memories, notebook entries,
- * dream flags) - driven by the FTriangleDreamMemory data added later.
+ * Serializable dream-state snapshot for a save slot. The current vertical
+ * slice persists player progression, pattern memory, notebook progress,
+ * environment identity, wake depth, and owned world flags.
  */
 UCLASS()
 class UTriangleSaveGame : public USaveGame
@@ -15,25 +15,48 @@ class UTriangleSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
+	/** Version written by the current persistence format. Zero denotes a pre-versioned save. */
+	static const int32 CurrentSchemaVersion;
+
 	UTriangleSaveGame();
 
-	/** Player transform inside the current dream level. */
+	/** Version of the serialized field layout used by this snapshot. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Triangle|Save")
+	int32 SchemaVersion;
+
+	/** Absolute player transform retained for legacy/debug compatibility. */
 	UPROPERTY()
 	FTransform PlayerTransform;
+
+	/** Player transform relative to the active environment's generated start. */
+	UPROPERTY()
+	FTransform PlayerTransformInEnvironment = FTransform::Identity;
+
+	/** True when PlayerTransformInEnvironment is authoritative for schema 2+. */
+	UPROPERTY()
+	bool bHasPlayerTransformInEnvironment = false;
 
 	/** Current hidden Lucidity value (0..100). */
 	UPROPERTY()
 	float Lucidity = 0.f;
 
-	/** Current hidden Recognition value (0..100) - the pattern catalogue. */
+	/** Current hidden Recognition value (0..100). */
 	UPROPERTY()
 	float Recognition = 0.f;
 
-	/** Has the player interacted with the notebook at least once. */
+	/** Stable pattern IDs already recorded in the player's Recognition catalogue. */
+	UPROPERTY()
+	TArray<FName> RecognizedPatternIds;
+
+	/** Legacy compatibility flag for pre-count notebook saves. */
 	UPROPERTY()
 	bool bNotebookInteracted = false;
 
-	/** How many times the corner triangle was witnessed. */
+	/** Total notebook reads, including repeated reads of earlier pages. */
+	UPROPERTY()
+	int32 NotebookInteractionCount = 0;
+
+	/** Number of distinct Triangle patterns currently catalogued. */
 	UPROPERTY()
 	int32 TriangleEncounters = 0;
 
@@ -41,11 +64,23 @@ public:
 	UPROPERTY()
 	TArray<FString> DiscoveredMemories;
 
-	/** Notebook page text added so far. */
+	/** Stable IDs for notebook pages added so far. */
 	UPROPERTY()
 	TArray<FString> NotebookPages;
 
-	/** Environment flags (door open, lights off, etc). */
+	/** Stable identifier for the environment containing the player. */
+	UPROPERTY()
+	FName CurrentEnvironmentId = NAME_None;
+
+	/** Number of completed false awakenings; zero means still in the first dream layer. */
+	UPROPERTY()
+	int32 FalseAwakeningLayer = 0;
+
+	/** Whether the childhood bedroom's interactive door is open. */
+	UPROPERTY()
+	bool bBedroomDoorOpen = false;
+
+	/** Environment flags (lights off and other extensible world state). */
 	UPROPERTY()
 	TMap<FString, bool> EnvironmentFlags;
 };

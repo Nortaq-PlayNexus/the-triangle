@@ -36,6 +36,11 @@ ETriangleRecognitionLevel ULTriangleRecognitionComponent::GetRecognitionLevel() 
 
 void ULTriangleRecognitionComponent::SetRecognition(float NewValue)
 {
+	if (!FMath::IsFinite(NewValue))
+	{
+		UE_LOG(LogTriangleDream, Warning, TEXT("Ignoring non-finite recognition value."));
+		return;
+	}
 	const float Clamped = FMath::Clamp(NewValue, 0.f, 100.f);
 	if (FMath::IsNearlyZero(Clamped - Recognition))
 	{
@@ -64,7 +69,7 @@ void ULTriangleRecognitionComponent::SetRecognition(float NewValue)
 
 void ULTriangleRecognitionComponent::AddRecognition(float Amount, FName Reason)
 {
-	if (Amount <= 0.f)
+	if (Amount <= 0.f || !FMath::IsFinite(Amount))
 	{
 		return;
 	}
@@ -89,9 +94,28 @@ void ULTriangleRecognitionComponent::RecordSighting(FName ManifestId)
 
 void ULTriangleRecognitionComponent::RestoreFromSave(float SavedRecognition)
 {
-	Recognition = 0.f;
-	if (SavedRecognition > 0.f)
+	// Keep the legacy scalar-only behaviour catalogue-compatible, but never use
+	// SetRecognition here because its level delegate drives progression.
+	Recognition = FMath::IsFinite(SavedRecognition) ? FMath::Clamp(SavedRecognition, 0.f, 100.f) : 0.f;
+	UE_LOG(LogTriangleDream, Log, TEXT("Recognition restored to %.1f."), Recognition);
+	OnRecognitionChanged.Broadcast(Recognition);
+}
+
+void ULTriangleRecognitionComponent::RestoreFromSaveWithCatalogue(float SavedRecognition, const TArray<FName>& SavedRecognizedPatternIds)
+{
+	Recognition = FMath::IsFinite(SavedRecognition) ? FMath::Clamp(SavedRecognition, 0.f, 100.f) : 0.f;
+
+	RecognisedIds.Reset();
+	for (const FName PatternId : SavedRecognizedPatternIds)
 	{
-		SetRecognition(SavedRecognition);
+		if (!PatternId.IsNone())
+		{
+			RecognisedIds.AddUnique(PatternId);
+		}
 	}
+
+	// OnRecognitionChanged is the value/UI notification. Level and presence
+	// delegates intentionally stay silent because this is a load, not progress.
+	UE_LOG(LogTriangleDream, Log, TEXT("Recognition restored to %.1f (%d catalogue entries)."), Recognition, RecognisedIds.Num());
+	OnRecognitionChanged.Broadcast(Recognition);
 }

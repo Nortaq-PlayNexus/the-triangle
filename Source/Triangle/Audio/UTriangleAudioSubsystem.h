@@ -77,6 +77,7 @@ private:
 
 	float CurrentVolume = 0.4f;
 	float MusicBaseVolume = 1.f;
+	FName CurrentState;
 	bool bSilenced = false;
 	bool bWarnedNoMusic = false;
 	TMap<FName, float> StateVolume;

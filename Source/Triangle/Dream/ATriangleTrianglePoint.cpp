@@ -65,6 +65,10 @@ void ATriangleTrianglePoint::Manifest(float Duration)
 
 void ATriangleTrianglePoint::Hide()
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ManifestTimerHandle);
+	}
 	bPointVisible = false;
 	SetActorHiddenInGame(true);
 	TriangleMesh->SetVisibility(false, true);

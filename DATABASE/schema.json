@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dreamcore Research Database",
+  "version": "1.0-draft",
+  "snapshot_date": "2026-09-24",
+  "records": {
+    "source": {
+      "required": ["id", "url_or_path", "source_type", "date_observed"],
+      "properties": {
+        "id": {"type": "string"},
+        "url_or_path": {"type": "string"},
+        "title": {"type": ["string", "null"]},
+        "source_type": {"type": "string", "enum": ["creator", "official_platform", "journalism", "reference", "academic", "community", "government", "search", "local"]},
+        "date_observed": {"type": "string", "format": "date"},
+        "supports": {"type": "array", "items": {"type": "string"}},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "game": {
+      "required": ["id", "title", "developer_ids", "source_ids", "classification_status"],
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "developer_ids": {"type": "array", "items": {"type": "string"}},
+        "release_date": {"type": ["string", "null"]},
+        "platforms": {"type": "array", "items": {"type": "string"}},
+        "source_ids": {"type": "array", "items": {"type": "string"}},
+        "classification_status": {"type": "string", "enum": ["confirmed", "probable", "candidate", "adjacent", "not_classifiable", "withdrawn"]},
+        "notes": {"type": "string"}
+      }
+    },
+    "classification": {
+      "required": ["game_id", "base_status", "horror_status", "confidence", "rationale"],
+      "properties": {
+        "game_id": {"type": "string"},
+        "base_status": {"type": "string"},
+        "horror_status": {"type": "string"},
+        "confidence": {"type": "string", "enum": ["high", "medium", "low", "unresolved"]},
+        "source_ids": {"type": "array", "items": {"type": "string"}},
+        "rationale": {"type": "string"},
+        "contradictions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "adoption_event": {
+      "required": ["id", "game_id", "term", "source_id", "event_type", "adoption_eligible"],
+      "properties": {
+        "id": {"type": "string"},
+        "game_id": {"type": "string"},
+        "term": {"type": "string"},
+        "source_id": {"type": "string"},
+        "event_type": {"type": "string", "enum": ["self_description", "third_party_description", "maintainer_description", "tag", "search_result"]},
+        "adoption_eligible": {"type": "boolean"},
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}

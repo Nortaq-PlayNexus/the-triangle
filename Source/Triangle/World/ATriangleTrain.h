@@ -4,8 +4,10 @@
 #include "GameFramework/Actor.h"
 #include "ATriangleTrain.generated.h"
 
-class UStaticMeshComponent;
+class APawn;
 class UPointLightComponent;
+class UStaticMeshComponent;
+class UTriangleInteractableComponent;
 
 /**
  * The wrong train.
@@ -31,10 +33,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Triangle|Train")
 	bool AreDoorsOpen() const { return bDoorsOpen; }
 
+	/** Toggles the train doors and the interior light together. */
+	UFUNCTION(BlueprintCallable, Category = "Triangle|Train")
+	void ToggleDoors();
+
+	/** The component used by the player's interaction finder. */
+	UFUNCTION(BlueprintPure, Category = "Triangle|Train")
+	UTriangleInteractableComponent* GetInteractableComponent() const { return Interactable; }
+
 protected:
 	virtual void BeginPlay() override;
 
 private:
+	UFUNCTION()
+	void OnInteracted(APawn* Interactor);
+
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> BodyMesh;
 
@@ -47,9 +60,16 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> WindowMesh;
 
+	/** Black insert revealed when the platform-side door opens. */
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> InteriorAperture;
+
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UPointLightComponent> InteriorLight;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Triangle|Train", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UTriangleInteractableComponent> Interactable;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Triangle|Train", meta = (AllowPrivateAccess = "true"))
 	bool bDoorsOpen = false;
-	float DoorAlpha = 0.f;
 };

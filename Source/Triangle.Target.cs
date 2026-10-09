@@ -1,6 +1,5 @@
 // Copyright (c) 2026 The Triangle project. Engine build target.
 using UnrealBuildTool;
-using System.Collections.Generic;
 
 public class TriangleTarget : TargetRules
 {
@@ -10,5 +9,9 @@ public class TriangleTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 		ExtraModuleNames.Add("Triangle");
+
+		// Keep the standalone build limited to the plugins explicitly required by
+		// the project; optional engine plugins are not part of this slice.
+		bAllowEnginePluginsEnabledByDefault = false;
 	}
 }

@@ -1,0 +1,13 @@
+{
+  "snapshot_date": "2026-09-24",
+  "terminology": [
+    {"term":"Dreamcore","status":"existing aesthetic and game title; proposed provenance category","definition":"Under this proposal, an interactive work materially derived from a documented dream experience of its creator or credited creator-team member.","source_ids":["E001","E002","E015","E021","E022","L020"],"notes":"Name collision is material; no ownership claim."},
+    {"term":"Dreamcore Horror","status":"proposed branch","definition":"A Dreamcore work materially shaped by the creator's own frightening dreams, nightmares, or night terrors and intended as horror.","source_ids":["L020"],"notes":"No formal industry standard found."},
+    {"term":"Dream game","status":"broad existing descriptor","definition":"A game that depicts, simulates, or uses dream-like events or mechanics.","source_ids":["E016","E024"],"notes":"Does not require personal provenance."},
+    {"term":"Nightmare game","status":"broad existing descriptor","definition":"A game involving fictional or personal nightmares; scope varies by creator and platform.","source_ids":["E017"],"notes":"Does not require the proposed source relationship."},
+    {"term":"Liminal-space game","status":"overlapping established/community descriptor","definition":"A game centered on transitional, uncanny, or empty spaces.","source_ids":["E001","E003","E004"],"notes":"Spatial/aesthetic overlap, not provenance."},
+    {"term":"Surreal horror","status":"overlapping descriptor","definition":"Horror using surreal, dreamlike, uncanny, or reality-bending elements.","source_ids":["E004"],"notes":"Aesthetic/tone category; source may be fictional, generic, or personal."},
+    {"term":"Autobiographical game","status":"overlapping academic/design descriptor","definition":"A work materially informed by a creator's own life experience.","source_ids":["E007"],"notes":"Broader than dreams; Dreamcore is a possible subset under this proposal."},
+    {"term":"Dream-derived game","status":"descriptive research phrase","definition":"Plain-language alternative to the proposed term.","source_ids":["E008","E009","E010","E011","E012"],"notes":"Low distinctiveness; useful for clarity."}
+  ]
+}

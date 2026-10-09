@@ -15,8 +15,11 @@ void UTriangleMotifSubsystem::RegisterMotif(FName Id, const FTriangleMotifConfig
 {
 	FMotifEntry& Entry = MotifTable.FindOrAdd(Id);
 	Entry.Config = Config;
+	Entry.Config.MinCooldown = FMath::Max(0.1f, Entry.Config.MinCooldown);
+	Entry.Config.MaxCooldown = FMath::Max(Entry.Config.MinCooldown, Entry.Config.MaxCooldown);
+	Entry.Config.RecognitionRequirement = FMath::Clamp(Entry.Config.RecognitionRequirement, 0.f, 100.f);
 	Entry.bEnabled = true;
-	Entry.NextScheduledTime = DreamClock + FMath::FRandRange(Config.MinCooldown, Config.MaxCooldown);
+	Entry.NextScheduledTime = DreamClock + FMath::FRandRange(Entry.Config.MinCooldown, Entry.Config.MaxCooldown);
 	UE_LOG(LogTriangleDream, Verbose, TEXT("Motif '%s' registered."), *Id.ToString());
 }
 
@@ -62,7 +65,9 @@ void UTriangleMotifSubsystem::QueueAutomaticMotif(FName Id)
 	{
 		return;
 	}
-	Entry->NextScheduledTime = DreamClock + FMath::FRandRange(Entry->Config.MinCooldown, Entry->Config.MaxCooldown);
+	Entry->NextScheduledTime = DreamClock + FMath::FRandRange(
+		FMath::Max(0.1f, Entry->Config.MinCooldown),
+		FMath::Max(Entry->Config.MinCooldown, Entry->Config.MaxCooldown));
 }
 
 bool UTriangleMotifSubsystem::RequestMotif(FName Id)

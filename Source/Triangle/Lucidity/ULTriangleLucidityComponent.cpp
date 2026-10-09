@@ -32,6 +32,11 @@ ETriangleLucidityLevel ULTriangleLucidityComponent::GetLucidityLevel() const
 
 void ULTriangleLucidityComponent::SetLucidity(float NewValue)
 {
+	if (!FMath::IsFinite(NewValue))
+	{
+		UE_LOG(LogTriangleDream, Warning, TEXT("Ignoring non-finite lucidity value."));
+		return;
+	}
 	const float Clamped = FMath::Clamp(NewValue, 0.f, 100.f);
 	if (FMath::IsNearlyZero(Clamped - Lucidity))
 	{
@@ -60,15 +65,19 @@ void ULTriangleLucidityComponent::SetLucidity(float NewValue)
 
 void ULTriangleLucidityComponent::AddLucidity(float Amount)
 {
-	SetLucidity(Lucidity + Amount);
+	if (FMath::IsFinite(Amount))
+	{
+		SetLucidity(Lucidity + Amount);
+	}
 }
 
 void ULTriangleLucidityComponent::RestoreFromSave(float SavedLucidity)
 {
-	bMaxReached = false;
-	Lucidity = 0.f;
-	if (SavedLucidity > 0.f)
-	{
-		SetLucidity(SavedLucidity);
-	}
+	// Loading is state synchronisation, not progression. Assign directly so the
+	// level and max delegates cannot replay story beats or awards.
+	Lucidity = FMath::IsFinite(SavedLucidity) ? FMath::Clamp(SavedLucidity, 0.f, 100.f) : 0.f;
+	bMaxReached = Lucidity >= 100.f;
+
+	UE_LOG(LogTriangleDream, Log, TEXT("Lucidity restored to %.1f."), Lucidity);
+	OnLucidityChanged.Broadcast(Lucidity);
 }
